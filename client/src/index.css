@@ -1,13 +1,75 @@
 @import "tailwindcss";
 
+@theme {
+  --color-carbon-black-50: #f3f2f1;
+  --color-carbon-black-100: #e7e5e4;
+  --color-carbon-black-200: #cfcbc9;
+  --color-carbon-black-300: #b7b1ae;
+  --color-carbon-black-400: #9f9793;
+  --color-carbon-black-500: #877d78;
+  --color-carbon-black-600: #6c6460;
+  --color-carbon-black-700: #514b48;
+  --color-carbon-black-800: #363230;
+  --color-carbon-black-900: #1b1918;
+  --color-carbon-black-950: #131111;
+
+  --color-lavender-veil-50: #f2ecf8;
+  --color-lavender-veil-100: #e5d9f2;
+  --color-lavender-veil-200: #cbb3e5;
+  --color-lavender-veil-300: #b18dd8;
+  --color-lavender-veil-400: #9767cb;
+  --color-lavender-veil-500: #7d41be;
+  --color-lavender-veil-600: #643498;
+  --color-lavender-veil-700: #4b2772;
+  --color-lavender-veil-800: #321a4c;
+  --color-lavender-veil-900: #190d26;
+  --color-lavender-veil-950: #12091b;
+
+  --color-lavender-mist-50: #efe5ff;
+  --color-lavender-mist-100: #e0ccff;
+  --color-lavender-mist-200: #c099ff;
+  --color-lavender-mist-300: #a166ff;
+  --color-lavender-mist-400: #8133ff;
+  --color-lavender-mist-500: #6200ff;
+  --color-lavender-mist-600: #4e00cc;
+  --color-lavender-mist-700: #3b0099;
+  --color-lavender-mist-800: #270066;
+  --color-lavender-mist-900: #140033;
+  --color-lavender-mist-950: #0e0024;
+
+  --color-brick-ember-50: #fee7e7;
+  --color-brick-ember-100: #fdcfce;
+  --color-brick-ember-200: #fa9f9e;
+  --color-brick-ember-300: #f86f6d;
+  --color-brick-ember-400: #f63f3c;
+  --color-brick-ember-500: #f40f0b;
+  --color-brick-ember-600: #c30c09;
+  --color-brick-ember-700: #920907;
+  --color-brick-ember-800: #610605;
+  --color-brick-ember-900: #310302;
+  --color-brick-ember-950: #220202;
+
+  --color-vintage-lavender-50: #f1f0f5;
+  --color-vintage-lavender-100: #e3e1ea;
+  --color-vintage-lavender-200: #c7c2d6;
+  --color-vintage-lavender-300: #aaa4c1;
+  --color-vintage-lavender-400: #8e86ac;
+  --color-vintage-lavender-500: #726798;
+  --color-vintage-lavender-600: #5b5379;
+  --color-vintage-lavender-700: #443e5b;
+  --color-vintage-lavender-800: #2e293d;
+  --color-vintage-lavender-900: #17151e;
+  --color-vintage-lavender-950: #100e15;
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
+  /* color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-color: #242424; */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -15,56 +77,3 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-}
