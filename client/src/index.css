@@ -1,65 +1,91 @@
 @import "tailwindcss";
 
 @theme {
-  --color-carbon-black-50: #f3f2f1;
-  --color-carbon-black-100: #e7e5e4;
-  --color-carbon-black-200: #cfcbc9;
-  --color-carbon-black-300: #b7b1ae;
-  --color-carbon-black-400: #9f9793;
-  --color-carbon-black-500: #877d78;
-  --color-carbon-black-600: #6c6460;
-  --color-carbon-black-700: #514b48;
-  --color-carbon-black-800: #363230;
-  --color-carbon-black-900: #1b1918;
-  --color-carbon-black-950: #131111;
+  /* --- Background Colors --- */
+  --color-background: #0B0E14;
+  --color-background-secondary: #151921;
+  --color-background-elevated: #1F242F;
+  --color-background-input: #1A1F28;
 
-  --color-lavender-veil-50: #f2ecf8;
-  --color-lavender-veil-100: #e5d9f2;
-  --color-lavender-veil-200: #cbb3e5;
-  --color-lavender-veil-300: #b18dd8;
-  --color-lavender-veil-400: #9767cb;
-  --color-lavender-veil-500: #7d41be;
-  --color-lavender-veil-600: #643498;
-  --color-lavender-veil-700: #4b2772;
-  --color-lavender-veil-800: #321a4c;
-  --color-lavender-veil-900: #190d26;
-  --color-lavender-veil-950: #12091b;
+  /* --- Surface & Component Backgrounds --- */
+  --color-surface: #151921;
+  --color-surface-elevated: #1F242F;
 
-  --color-lavender-mist-50: #efe5ff;
-  --color-lavender-mist-100: #e0ccff;
-  --color-lavender-mist-200: #c099ff;
-  --color-lavender-mist-300: #a166ff;
-  --color-lavender-mist-400: #8133ff;
-  --color-lavender-mist-500: #6200ff;
-  --color-lavender-mist-600: #4e00cc;
-  --color-lavender-mist-700: #3b0099;
-  --color-lavender-mist-800: #270066;
-  --color-lavender-mist-900: #140033;
-  --color-lavender-mist-950: #0e0024;
+  /* --- Text Colors --- */
+  --color-text-primary: #F9FAFB;
+  --color-text-secondary: #94A3B8;
+  --color-text-muted: #64748B;
+  --color-text-disabled: #475569;
+  --color-text-link: #818CF8;
 
-  --color-brick-ember-50: #fee7e7;
-  --color-brick-ember-100: #fdcfce;
-  --color-brick-ember-200: #fa9f9e;
-  --color-brick-ember-300: #f86f6d;
-  --color-brick-ember-400: #f63f3c;
-  --color-brick-ember-500: #f40f0b;
-  --color-brick-ember-600: #c30c09;
-  --color-brick-ember-700: #920907;
-  --color-brick-ember-800: #610605;
-  --color-brick-ember-900: #310302;
-  --color-brick-ember-950: #220202;
+  /* --- Brand & Primary Scale --- */
+  --color-primary-50: #EEF2FF;
+  --color-primary-100: #E0E7FF;
+  --color-primary-200: #C7D2FE;
+  --color-primary-300: #A5B4FC;
+  --color-primary-400: #818CF8;
+  --color-primary-500: #6366F1;
+  --color-primary-600: #4F46E5;
+  --color-primary-700: #4338CA;
+  --color-primary-800: #3730A3;
+  --color-primary-900: #312E81;
+  --color-primary-950: #1E1B4B;
 
-  --color-vintage-lavender-50: #f1f0f5;
-  --color-vintage-lavender-100: #e3e1ea;
-  --color-vintage-lavender-200: #c7c2d6;
-  --color-vintage-lavender-300: #aaa4c1;
-  --color-vintage-lavender-400: #8e86ac;
-  --color-vintage-lavender-500: #726798;
-  --color-vintage-lavender-600: #5b5379;
-  --color-vintage-lavender-700: #443e5b;
-  --color-vintage-lavender-800: #2e293d;
-  --color-vintage-lavender-900: #17151e;
-  --color-vintage-lavender-950: #100e15;
+  /* --- Secondary (Electric Purple) --- */
+  --color-secondary: #A855F7;
+  --color-secondary-hover: #9333EA;
+  --color-secondary-active: #7E22CE;
+
+  /* --- Accent (Cyber Cyan) Scale --- */
+  --color-accent-50: #ECFEFF;
+  --color-accent-100: #CFFAFE;
+  --color-accent-200: #A5F3FC;
+  --color-accent-300: #67E8F9;
+  --color-accent-400: #22D3EE;
+  --color-accent-500: #06B6D4;
+  --color-accent-600: #0891B2;
+  --color-accent-700: #0E7490;
+  --color-accent-800: #155E75;
+  --color-accent-900: #164E63;
+  --color-accent-950: #083344;
+
+  /* --- CTA (Neon Magenta) --- */
+  --color-cta: #FB22FF;
+  --color-cta-hover: #D91AD9;
+  --color-cta-text: #FFFFFF;
+
+  /* --- Borders & Dividers --- */
+  --color-border-subtle: #1E293B;
+  --color-border-strong: #334155;
+  --color-divider: #1E293B;
+
+  /* --- Interactive States --- */
+  --color-interactive-hover: color-mix(in srgb, var(--color-primary-500) 10%, transparent);
+  --color-interactive-active: color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+  --color-interactive-focus: #6366F1;
+  --color-interactive-selection: color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+
+  /* --- System States --- */
+  --color-success: #10B981;
+  --color-success-muted: #064E3B;
+  --color-warning: #F59E0B;
+  --color-warning-muted: #78350F;
+  --color-error: #EF4444;
+  --color-error-muted: #7F1D1D;
+  --color-info: #3B82F6;
+  --color-info-muted: #1E3A8A;
+
+  /* --- Extra Elements --- */
+  --color-tooltip: #030712;
+  --color-code-bg: #0F172A;
+  --color-table-header: #111827;
+}
+
+/* Base styles to ensure the theme is applied */
+@layer base {
+  body {
+    @apply bg-background text-text-primary;
+  }
 }
 
 :root {
