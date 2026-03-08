@@ -2,6 +2,8 @@ import NotFound from "./pages/NotFound";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 
+import MainLayout from "./layout/MainLayout";
+
 import {
   createBrowserRouter,
   createRoutesFromElements,
@@ -15,9 +17,11 @@ const App = () => {
   const router = createBrowserRouter(
     createRoutesFromElements(
       <Route path="/">
-        <Route index element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="*" element={<NotFound />} />
+        <Route path="/" element={<MainLayout />}>
+          <Route index element={<Home />}></Route>
+        </Route>
+        <Route path="login" element={<Login />} />
+        <Route path="*" element={<NotFound />} />,
       </Route>,
     ),
   );
