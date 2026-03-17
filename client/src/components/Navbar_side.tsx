@@ -46,7 +46,7 @@ const Sidebar = () => {
             </div>
             <div>
               <p className="text-sm font-bold text-text-primary tracking-tight">
-                Yash's Hub
+                Shashwat's Hub
               </p>
               <p className="text-xs text-text-muted">Pro Plan</p>
             </div>
