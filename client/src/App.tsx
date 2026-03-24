@@ -1,4 +1,5 @@
 import NotFound from "./pages/NotFound";
+import Dashboard from "./pages/Dashboard";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 
@@ -18,7 +19,7 @@ const App = () => {
     createRoutesFromElements(
       <Route path="/">
         <Route path="/" element={<MainLayout />}>
-          <Route index element={<Home />}></Route>
+          <Route index element={<Dashboard />}></Route>
         </Route>
         <Route path="login" element={<Login />} />
         <Route path="*" element={<NotFound />} />,
