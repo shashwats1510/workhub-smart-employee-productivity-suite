@@ -1,7 +1,7 @@
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
-import Home from "./pages/Home";
 import Login from "./pages/Login";
+import Leave from "./pages/Leave";
 
 import MainLayout from "./layout/MainLayout";
 
@@ -13,6 +13,7 @@ import {
 } from "react-router-dom";
 
 import "./App.css";
+import Payroll from "./pages/Payroll";
 
 const App = () => {
   const router = createBrowserRouter(
@@ -20,6 +21,8 @@ const App = () => {
       <Route path="/">
         <Route path="/" element={<MainLayout />}>
           <Route index element={<Dashboard />}></Route>
+          <Route path="leave" element={<Leave />} />
+          <Route path="payroll" element={<Payroll/>} />
         </Route>
         <Route path="login" element={<Login />} />
         <Route path="*" element={<NotFound />} />,
