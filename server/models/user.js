@@ -30,6 +30,15 @@ export const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  tasks: {
+    type: [mongoose.Schema.ObjectId],
+    default: [],
+    required: true,
+  },
+  productivity: {
+    type: mongoose.Schema.ObjectId,
+    required: true,
+  },
 });
 
 const userModel = mongoose.model("Users", userSchema);

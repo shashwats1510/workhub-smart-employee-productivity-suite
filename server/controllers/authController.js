@@ -1,31 +1,51 @@
 import bcrypt from "bcryptjs";
+import userModel from "../models/user.js"; // Adjust the path to where your schema is saved
 import jwt from "jsonwebtoken";
 
-import User from "../models/user.js";
-
-const salt = bcrypt.genSaltSync(10);
+/**
+ * Creates a new user account based on the userModel schema.
+ * * @param {Object} userData - An object containing the user's details.
+ * @returns {Object} An object containing the success status and the saved user or error message.
+ */
 export const createAccount = async (req, res) => {
-  console.log("req");
-  const { email, password, name, accountType, phoneNo, dateOfBirth, post } =
-    req.body;
-
   try {
-    const userDoc = await User.create({
-      email,
-      password: bcrypt.hashSync(password, salt),
-      name,
-      accountType,
-      phoneNo,
-      dateOfBirth,
-      post,
-    });
-    if (!userDoc) {
-      throw new Error("Failed to create user");
+    const userData = req.body;
+
+    // Check if a user with this email already exists
+    const existingUser = await userModel.findOne({ email: userData.email });
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: "An account with this email already exists.",
+      });
     }
-    res.status(201).json(userDoc);
+
+    // Hash the password for security
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(userData.password, salt);
+
+    // Construct the new user document
+    // We use the spread operator (...) to bring in the rest of the data,
+    // but overwrite the password with the hashed version.
+    const newUser = new userModel({
+      ...userData,
+      password: hashedPassword,
+    });
+
+    // Save the user to the database
+    const savedUser = await newUser.save();
+
+    return res.status(201).json({
+      message: "Account created successfully.",
+      user: savedUser,
+    });
   } catch (error) {
-    console.log(error);
-    res.status(409).json({ message: error.message });
+    // Catch Mongoose validation errors or database connection issues
+    console.error("Error creating user account:", error);
+    return res.status(500).json({
+      message: "Failed to create account. Please check your data.",
+      error: error.message,
+    });
   }
 };
 

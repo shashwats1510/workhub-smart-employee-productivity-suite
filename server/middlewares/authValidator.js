@@ -6,16 +6,29 @@ export const signupValidation = (req, res, next) => {
     email: Joi.string().email().required(),
     password: Joi.string()
       .regex(/^(?=.*[a-zA-Z])(?=.*[\d\W]).{10,}$/)
+      .message(
+        "Password must be at least 10 characters long and contain at least one letter and one number or special character.",
+      )
       .required(),
     name: Joi.string().required(),
     accountType: Joi.string().valid("Admin", "Manager", "Employee").required(),
-    dateOfBirth: Joi.date(),
-    phoneNo: Joi.string(),
-    post: Joi.string(),
+    phoneNo: Joi.string().required(),
+    dateOfBirth: Joi.date().iso().required(),
+    post: Joi.string().required(),
+    productivity: Joi.string().hex().length(24).required(),
+    tasks: Joi.array().items(Joi.string().hex().length(24)).optional(),
   });
 
   const { error } = schema.validate(req.body);
-  if (error) return res.status(400).json(error);
+
+  if (error) {
+    // Returning a cleaner error message format for the frontend
+    return res.status(400).json({
+      success: false,
+      message: error.details[0].message,
+    });
+  }
+
   next();
 };
 
