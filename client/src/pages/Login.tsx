@@ -17,7 +17,7 @@ const Login = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setErrorState(false); // Reset error state on new attempt
+    setErrorState(false);
 
     try {
       const res = await axios.post("/api/auth/login", {
@@ -49,10 +49,18 @@ const Login = () => {
   };
 
   useEffect(() => {
-    console.log("checking login status");
-    axios.get("/api/auth/checkloggedin").then((res) => {
-      if (res.data.loggedIn) navigator("/");
-    });
+    try {
+      axios.get("/api/auth/checkloggedin").then(
+        (res) => {
+          if (res.data.loggedIn) navigator("/");
+        },
+        () => {
+          console.log("Login to continue");
+        },
+      );
+    } catch (err) {
+      console.log("Something went wrong: ", err);
+    }
   }, []);
 
   return (

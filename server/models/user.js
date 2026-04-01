@@ -14,7 +14,7 @@ export const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  accountType: {
+  role: {
     type: String,
     required: true,
   },
@@ -22,7 +22,7 @@ export const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  dateOfBirth: {
+  dob: {
     type: Date,
     required: true,
   },
@@ -32,12 +32,13 @@ export const userSchema = new mongoose.Schema({
   },
   tasks: {
     type: [mongoose.Schema.ObjectId],
+    ref: "Task",
     default: [],
-    required: true,
   },
   productivity: {
     type: mongoose.Schema.ObjectId,
-    required: true,
+    ref: "Productivity",
+    default: null,
   },
 });
 

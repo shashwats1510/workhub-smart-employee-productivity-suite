@@ -1,13 +1,11 @@
 import bcrypt from "bcryptjs";
-import userModel from "../models/user.js"; // Adjust the path to where your schema is saved
 import jwt from "jsonwebtoken";
 
-/**
- * Creates a new user account based on the userModel schema.
- * * @param {Object} userData - An object containing the user's details.
- * @returns {Object} An object containing the success status and the saved user or error message.
- */
+import userModel from "../models/user.js";
+import productivityModel from "../models/productivity.js";
+
 export const createAccount = async (req, res) => {
+  console.log("create account req");
   try {
     const userData = req.body;
 
@@ -20,15 +18,17 @@ export const createAccount = async (req, res) => {
       });
     }
 
+    const newProductivity = new productivityModel();
+    const prod = await newProductivity.save();
+
     // Hash the password for security
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(userData.password, salt);
 
     // Construct the new user document
-    // We use the spread operator (...) to bring in the rest of the data,
-    // but overwrite the password with the hashed version.
     const newUser = new userModel({
       ...userData,
+      productivity: prod._id,
       password: hashedPassword,
     });
 
@@ -51,9 +51,10 @@ export const createAccount = async (req, res) => {
 
 export const login = async (req, res) => {
   const { email, password } = req.body;
+  console.log("login req");
 
   try {
-    const userDoc = await User.findOne({ email });
+    const userDoc = await userModel.findOne({ email });
     if (!userDoc) return res.status(404).json({ message: "user not found" });
 
     const passOk = bcrypt.compareSync(password, userDoc.password);

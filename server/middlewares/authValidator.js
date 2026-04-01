@@ -11,12 +11,10 @@ export const signupValidation = (req, res, next) => {
       )
       .required(),
     name: Joi.string().required(),
-    accountType: Joi.string().valid("Admin", "Manager", "Employee").required(),
+    post: Joi.string().valid("Admin", "Manager", "Employee").required(),
     phoneNo: Joi.string().required(),
-    dateOfBirth: Joi.date().iso().required(),
-    post: Joi.string().required(),
-    productivity: Joi.string().hex().length(24).required(),
-    tasks: Joi.array().items(Joi.string().hex().length(24)).optional(),
+    dob: Joi.date().iso().required(),
+    role: Joi.string().required(),
   });
 
   const { error } = schema.validate(req.body);

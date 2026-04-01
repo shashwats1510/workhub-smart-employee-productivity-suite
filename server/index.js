@@ -4,7 +4,8 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 
 import initializeDB from "./db.js";
-import AuthRouter from "./routes/authRouter.js";
+import authRouter from "./routes/authRouter.js";
+import infoRouter from "./routes/infoRouter.js";
 
 const app = express();
 app.disable("x-powered-by");
@@ -22,7 +23,8 @@ app.use(
 );
 app.use(express.json());
 
-app.use("/auth", AuthRouter);
+app.use("/auth", authRouter);
+app.use("/info", infoRouter);
 
 app.get("/ping", (req, res) => {
   res.json("pong");

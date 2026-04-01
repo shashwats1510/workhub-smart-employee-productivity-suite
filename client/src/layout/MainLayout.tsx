@@ -5,22 +5,43 @@ import axios from "axios";
 
 import Navbar_top from "../components/Navbar_top";
 import Navbar_side from "../components/Navbar_side";
+import { Slide, ToastContainer } from "react-toastify";
 
 const MainLayout = () => {
   const navigator = useNavigate();
   useEffect(() => {
-    console.log("checking login status");
-    axios.get("/api/auth/checkloggedin").then((res) => {
-      if (!res.data.loggedIn) navigator("/login");
-    });
-  }, []);
+    const checkLogin = async () => {
+      console.log("checking login status");
+      await axios.get("/api/auth/checkloggedin").catch(() => {
+        navigator("/login");
+      });
+      console.log("User is logged in");
+    };
+
+    checkLogin();
+  }, [navigator]);
 
   return (
     <div className="w-full">
       <Navbar_top />
       <div className="grid grid-cols-[auto_1fr] gap-4 p-5 min-h-screen">
         <Navbar_side />
-        <Outlet />
+        <div>
+          <ToastContainer
+            position="top-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick={false}
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="dark"
+            transition={Slide}
+          />
+          <Outlet />
+        </div>
       </div>
     </div>
   );
