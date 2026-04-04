@@ -21,15 +21,11 @@ export const createAccount = async (req, res) => {
     const newProductivity = new productivityModel();
     const prod = await newProductivity.save();
 
-    // Hash the password for security
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(userData.password, salt);
-
     // Construct the new user document
     const newUser = new userModel({
       ...userData,
       productivity: prod._id,
-      password: hashedPassword,
+      password: userData.password,
     });
 
     // Save the user to the database
@@ -57,7 +53,7 @@ export const login = async (req, res) => {
     const userDoc = await userModel.findOne({ email });
     if (!userDoc) return res.status(404).json({ message: "user not found" });
 
-    const passOk = bcrypt.compareSync(password, userDoc.password);
+    const passOk = bcrypt.compare(password, userDoc.password);
     if (!passOk)
       return res
         .status(403)
@@ -79,7 +75,7 @@ export const login = async (req, res) => {
   }
 };
 
-export const checkLoggedIn = (req, res) => {
+export const checkLoggedIn = async (req, res) => {
   const { token } = req.cookies;
 
   if (!token) {
@@ -104,4 +100,90 @@ export const checkLoggedIn = (req, res) => {
       user: info,
     });
   });
+};
+
+export const editUser = async (req, res) => {
+  try {
+    const { id, name, email, post, role, phoneNo, dob, password } = req.body;
+
+    const user = await userModel.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    user.name = name || user.name;
+    user.email = email || user.email;
+    user.post = post || user.post;
+    user.role = role || user.role;
+    user.phoneNo = phoneNo || user.phoneNo;
+    user.dob = dob || user.dob;
+
+    if (password && password.trim() !== "") user.password = password;
+
+    await user.save();
+    res.status(200).json({
+      success: true,
+      message: "User updated successfully",
+      data: user,
+    });
+  } catch (error) {
+    console.error("Error updating user:", error);
+
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: "Email already exists",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+export const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.query;
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    const deletedUser = await userModel.findByIdAndDelete(id);
+    if (!deletedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (deletedUser.productivity)
+      await productivityModel.findByIdAndDelete(deletedUser.productivity);
+
+    res.status(200).json({
+      success: true,
+      message: "User and associated data deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+
+    if (error.kind === "ObjectId") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid User ID format",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
 };

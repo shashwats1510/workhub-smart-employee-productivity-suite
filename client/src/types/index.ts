@@ -1,6 +1,6 @@
 export type Post = "Admin" | "Manager" | "Employee";
 export interface Account {
-  id: string;
+  _id: string;
   email: string;
   name: string;
   post: Post;

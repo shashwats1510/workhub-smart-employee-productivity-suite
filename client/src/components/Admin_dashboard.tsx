@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState, type SubmitEvent } from "react";
 import { UserPlus, Search, X } from "lucide-react";
 import { Slide, toast } from "react-toastify";
 import axios from "axios";
@@ -26,8 +26,10 @@ const AdminPanel = () => {
   });
 
   // --- Handlers ---
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    setSelectedUserId("");
     setFormData({
       name: "",
       email: "",
@@ -39,7 +41,40 @@ const AdminPanel = () => {
     });
   };
 
-  const handleSaveUser = async (e: React.FormEvent) => {
+  const handleOpenModal = async (mode: "create" | "edit", userId: string) => {
+    setModalMode(mode);
+    if (mode === "edit") {
+      setSelectedUserId(userId);
+      try {
+        const res = await axios.get(`/api/info/getUserDetails?id=${userId}`);
+        if (res.status === 200) {
+          const user = res.data.data;
+
+          // --- Date Formatting Logic ---
+          let formattedDate = "";
+          if (user?.dob) {
+            // Converts "2024-05-20T..." to "2024-05-20"
+            formattedDate = new Date(user.dob).toISOString().split("T")[0];
+          }
+
+          setFormData({
+            name: user?.name || "",
+            email: user?.email || "",
+            post: user?.post || "Employee",
+            role: user?.role || "",
+            phoneNo: user?.phoneNo || "",
+            dob: formattedDate,
+            password: "",
+          });
+        }
+      } catch (err) {
+        toast.error("Failed to fetch user details");
+      }
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleSaveUser = async (e: SubmitEvent) => {
     e.preventDefault();
     try {
       toast.promise(
@@ -66,24 +101,70 @@ const AdminPanel = () => {
     }
   };
 
-  const getAllUsers = async () => {
-    return axios.get("/api/info/get-all-users");
-  };
-
-  const handleDeleteUser = (id: string) => {
-    if (
-      window.confirm(
-        "Are you sure you want to delete this account? This action cannot be undone.",
-      )
-    ) {
-      // setUsers(users.filter((u) => u.id !== id));
+  const handleEditUser = async (e: SubmitEvent) => {
+    e.preventDefault();
+    try {
+      toast.promise(
+        axios.post("/api/auth/editUserDetails", {
+          ...formData,
+          id: selectedUserId,
+        }),
+        {
+          pending: "Editing User Details",
+          success: "Successfully edited",
+          error: "Failed to edit details",
+        },
+        {
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+          transition: Slide,
+        },
+      );
+      handleCloseModal();
+    } catch (error) {
+      console.error("Validation or Server Error");
     }
   };
 
-  function parseDate(dateStr: string) {
-    const [dd, mm, yyyy] = dateStr.split("/").map(Number);
-    return Date.UTC(yyyy, mm - 1, dd);
-  }
+  const handleSubmit = (e: SubmitEvent) => {
+    e.preventDefault();
+    modalMode == "create" ? handleSaveUser(e) : handleEditUser(e);
+  };
+
+  const handleDeleteUser = async (id: string) => {
+    try {
+      toast.promise(
+        axios.get(`/api/auth/deleteUser?id=${id}`),
+        {
+          pending: "Deleting User",
+          success: "User Deleted",
+          error: "Failed to delete user",
+        },
+        {
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+          transition: Slide,
+        },
+      );
+      handleCloseModal();
+    } catch (error) {
+      console.error("Validation or Server Error");
+    }
+  };
+
+  const getAllUsers = async () => {
+    return axios.get("/api/info/getAllUsers");
+  };
 
   const filteredUsers = users.filter(
     (u) =>
@@ -112,7 +193,7 @@ const AdminPanel = () => {
 
           <button
             className="flex items-center gap-2 bg-secondary hover:bg-secondary-hover text-white px-4 py-2.5 rounded-lg font-medium shadow-lg shadow-(--color-secondary)/20 transition-all hover:scale-105"
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => handleOpenModal("create", "")}
           >
             <UserPlus className="w-4 h-4" />
             Add User
@@ -150,8 +231,13 @@ const AdminPanel = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-(--color-border-subtle)">
-                {filteredUsers.map((user) => (
-                  <User_tile {...user} />
+                {filteredUsers.map((user, index) => (
+                  <User_tile
+                    key={index}
+                    {...user}
+                    handleEditUser={handleOpenModal}
+                    handleDeleteUser={handleDeleteUser}
+                  />
                 ))}
                 {filteredUsers.length === 0 && (
                   <tr>
@@ -187,7 +273,7 @@ const AdminPanel = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSaveUser} className="p-6 space-y-5">
+            <form onSubmit={handleSubmit} className="p-6 space-y-5">
               <div className="space-y-1.5">
                 <input
                   type="text"

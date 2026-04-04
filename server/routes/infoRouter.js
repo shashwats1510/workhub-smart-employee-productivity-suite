@@ -1,9 +1,10 @@
 import express from "express";
 import { isLoggedIn } from "../middlewares/authValidator.js";
-import { getAllUsers } from "../controllers/infoController.js";
+import { getAllUsers, getUserDetails } from "../controllers/infoController.js";
 
 const router = express.Router();
 
-router.get("/get-all-users", isLoggedIn, getAllUsers);
+router.get("/getAllUsers", isLoggedIn, getAllUsers);
+router.get("/getUserDetails", getUserDetails);
 
 export default router;
