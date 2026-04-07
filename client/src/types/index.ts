@@ -1,11 +1,13 @@
 export type Post = "Admin" | "Manager" | "Employee";
 export interface Account {
-  id: string;
-  name: string;
+  _id: string;
   email: string;
+  name: string;
   post: Post;
   role: string;
   phone: string;
   dob: number;
+  tasks: string[],
+  productivity: string[],
   status: "Active" | "Inactive";
 };

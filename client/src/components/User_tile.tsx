@@ -11,8 +11,13 @@ export function formatUTCDate(utcMilliseconds: number) {
   return `${dd}/${mm}/${yyyy}`;
 }
 
+interface props extends Account {
+  handleEditUser: (mode: "create" | "edit", user: string) => void;
+  handleDeleteUser: (id: string) => void;
+}
+
 const User_tile = ({
-  id,
+  _id,
   name,
   email,
   post,
@@ -20,7 +25,9 @@ const User_tile = ({
   phone,
   dob,
   status,
-}: Account) => {
+  handleEditUser,
+  handleDeleteUser,
+}: props) => {
   const getpostBadge = (post: Post) => {
     switch (post) {
       case "Admin":
@@ -46,7 +53,7 @@ const User_tile = ({
 
   return (
     <tr
-      key={id}
+      key={_id}
       className="hover:bg-(--color-background-elevated)/50 transition-colors"
     >
       <td className="px-6 py-4">
@@ -72,12 +79,18 @@ const User_tile = ({
           <button
             className="p-2 rounded-md text-text-secondary hover:text-(--color-primary-400) hover:bg-interactive-hover transition-colors"
             title="Edit Account"
+            onClick={() => {
+              handleEditUser("edit", _id);
+            }}
           >
             <Edit2 className="w-4 h-4" />
           </button>
           <button
             className="p-2 rounded-md text-text-secondary hover:text-error hover:bg-error-muted/30 transition-colors"
             title="Delete Account"
+            onClick={()=> {
+              handleDeleteUser(_id);
+            }}
           >
             <Trash2 className="w-4 h-4" />
           </button>

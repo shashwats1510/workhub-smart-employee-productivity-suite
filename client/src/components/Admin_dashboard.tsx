@@ -1,23 +1,14 @@
-import React, { useState } from "react";
+import { useEffect, useState, type SubmitEvent } from "react";
 import { UserPlus, Search, X } from "lucide-react";
+import { Slide, toast } from "react-toastify";
+import axios from "axios";
 
 import type { Account, Post } from "../types";
-import User_tile, { formatUTCDate } from "./User_tile";
+import User_tile from "./User_tile";
+
 const AdminPanel = () => {
-  const initialUsers: Account[] = [
-    {
-      id: "1",
-      name: "Sarah Connor",
-      email: "sarah@workhub.com",
-      post: "Admin",
-      role: "admin",
-      status: "Active",
-      phone: "1234567890",
-      dob: Date.UTC(2005, 5, 12),
-    },
-  ];
   // --- State ---
-  const [users, setUsers] = useState<Account[]>(initialUsers);
+  const [users, setUsers] = useState<Account[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
@@ -29,106 +20,163 @@ const AdminPanel = () => {
     email: "",
     post: "Employee" as Post,
     role: "",
-    phone: "",
+    phoneNo: "",
     dob: "",
     password: "",
   });
 
   // --- Handlers ---
-  const handleOpenModal = (mode: "create" | "edit", user?: Account) => {
-    setModalMode(mode);
-    if (mode === "edit" && user) {
-      setSelectedUserId(user.id);
-      setFormData({
-        name: "",
-        email: "",
-        post: "Employee" as Post,
-        role: "",
-        phone: "",
-        dob: "",
-        password: "",
-      });
-    } else {
-      setSelectedUserId(null);
-      setFormData({
-        name: "",
-        email: "",
-        post: "Employee" as Post,
-        role: "",
-        phone: "",
-        dob: "",
-        password: "",
-      });
-    }
-    setIsModalOpen(true);
-  };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    setSelectedUserId("");
     setFormData({
       name: "",
       email: "",
       post: "Employee",
       role: "",
-      phone: "",
+      phoneNo: "",
       dob: "",
       password: "",
     });
   };
 
-  const handleSaveUser = (e: React.FormEvent) => {
+  const handleOpenModal = async (mode: "create" | "edit", userId: string) => {
+    setModalMode(mode);
+    if (mode === "edit") {
+      setSelectedUserId(userId);
+      try {
+        const res = await axios.get(`/api/info/getUserDetails?id=${userId}`);
+        if (res.status === 200) {
+          const user = res.data.data;
+
+          // --- Date Formatting Logic ---
+          let formattedDate = "";
+          if (user?.dob) {
+            // Converts "2024-05-20T..." to "2024-05-20"
+            formattedDate = new Date(user.dob).toISOString().split("T")[0];
+          }
+
+          setFormData({
+            name: user?.name || "",
+            email: user?.email || "",
+            post: user?.post || "Employee",
+            role: user?.role || "",
+            phoneNo: user?.phoneNo || "",
+            dob: formattedDate,
+            password: "",
+          });
+        }
+      } catch (err) {
+        toast.error("Failed to fetch user details");
+      }
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleSaveUser = async (e: SubmitEvent) => {
     e.preventDefault();
-
-    if (modalMode === "create") {
-      const newUser: Account = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: formData.name,
-        email: formData.email,
-        role: formData.role,
-        status: "Active",
-        post: "Admin",
-        phone: "",
-        dob: 0,
-      };
-      setUsers([...users, newUser]);
-    } else if (modalMode === "edit" && selectedUserId) {
-      setUsers(
-        users.map((u) =>
-          u.id === selectedUserId
-            ? {
-                ...u,
-                name: formData.name,
-                email: formData.email,
-                role: formData.role,
-              }
-            : u,
-        ),
+    try {
+      toast.promise(
+        axios.post("/api/auth/create-account", { ...formData }),
+        {
+          pending: "Creating user account",
+          success: "Account created",
+          error: "Failed to create Account",
+        },
+        {
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+          transition: Slide,
+        },
       );
-      // Note: you would handle the password change via an API call here if formData.password is not empty.
-    }
-    handleCloseModal();
-  };
-
-  const handleDeleteUser = (id: string) => {
-    if (
-      window.confirm(
-        "Are you sure you want to delete this account? This action cannot be undone.",
-      )
-    ) {
-      setUsers(users.filter((u) => u.id !== id));
+      handleCloseModal();
+    } catch (error) {
+      console.error("Validation or Server Error");
     }
   };
 
-  function parseDate(dateStr: string) {
-    const [dd, mm, yyyy] = dateStr.split("/").map(Number);
-    return Date.UTC(yyyy, mm - 1, dd);
-  }
+  const handleEditUser = async (e: SubmitEvent) => {
+    e.preventDefault();
+    try {
+      toast.promise(
+        axios.post("/api/auth/editUserDetails", {
+          ...formData,
+          id: selectedUserId,
+        }),
+        {
+          pending: "Editing User Details",
+          success: "Successfully edited",
+          error: "Failed to edit details",
+        },
+        {
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+          transition: Slide,
+        },
+      );
+      handleCloseModal();
+    } catch (error) {
+      console.error("Validation or Server Error");
+    }
+  };
+
+  const handleSubmit = (e: SubmitEvent) => {
+    e.preventDefault();
+    modalMode == "create" ? handleSaveUser(e) : handleEditUser(e);
+  };
+
+  const handleDeleteUser = async (id: string) => {
+    try {
+      toast.promise(
+        axios.get(`/api/auth/deleteUser?id=${id}`),
+        {
+          pending: "Deleting User",
+          success: "User Deleted",
+          error: "Failed to delete user",
+        },
+        {
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+          transition: Slide,
+        },
+      );
+      handleCloseModal();
+    } catch (error) {
+      console.error("Validation or Server Error");
+    }
+  };
+
+  const getAllUsers = async () => {
+    return axios.get("/api/info/getAllUsers");
+  };
 
   const filteredUsers = users.filter(
     (u) =>
       u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.email.toLowerCase().includes(searchTerm.toLowerCase()),
   );
+
+  useEffect(() => {
+    getAllUsers().then((res) => {
+      if (res.status == 200) setUsers(res.data.data);
+    });
+  }, []);
 
   return (
     <div className="flex h-screen bg-background text-text-primary font-sans overflow-hidden border-2 rounded-lg border-accent-700">
@@ -145,7 +193,7 @@ const AdminPanel = () => {
 
           <button
             className="flex items-center gap-2 bg-secondary hover:bg-secondary-hover text-white px-4 py-2.5 rounded-lg font-medium shadow-lg shadow-(--color-secondary)/20 transition-all hover:scale-105"
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => handleOpenModal("create", "")}
           >
             <UserPlus className="w-4 h-4" />
             Add User
@@ -183,8 +231,13 @@ const AdminPanel = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-(--color-border-subtle)">
-                {filteredUsers.map((user) => (
-                  <User_tile {...user} />
+                {filteredUsers.map((user, index) => (
+                  <User_tile
+                    key={index}
+                    {...user}
+                    handleEditUser={handleOpenModal}
+                    handleDeleteUser={handleDeleteUser}
+                  />
                 ))}
                 {filteredUsers.length === 0 && (
                   <tr>
@@ -192,7 +245,7 @@ const AdminPanel = () => {
                       colSpan={4}
                       className="px-6 py-12 text-center text-text-muted"
                     >
-                      No users found matching your search.
+                      No users found
                     </td>
                   </tr>
                 )}
@@ -203,7 +256,6 @@ const AdminPanel = () => {
       </main>
 
       {/* Modal overlay for Create / Edit */}
-
       <dialog open={isModalOpen}>
         <div className="fixed inset-0 z-50 p-4 bg-black/60 backdrop-blur-sm">
           <div className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 bg-(--color-surface) border border-(--color-border-subtle) rounded-xl w-3xl shadow-2xl overflow-hidden flex flex-col">
@@ -221,7 +273,7 @@ const AdminPanel = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSaveUser} className="p-6 space-y-5">
+            <form onSubmit={handleSubmit} className="p-6 space-y-5">
               <div className="space-y-1.5">
                 <input
                   type="text"
@@ -312,9 +364,9 @@ const AdminPanel = () => {
                 <input
                   type="text"
                   required
-                  value={formData.phone}
+                  value={formData.phoneNo}
                   onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
+                    setFormData({ ...formData, phoneNo: e.target.value })
                   }
                   className="w-full rounded-lg border border-(--color-border-subtle) bg-background-input px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-(--color-primary-500) focus:border-transparent transition-all"
                   placeholder="Phone Number"
