@@ -17,21 +17,32 @@ import {
 
 import "./App.css";
 import Timesheet from "./pages/Timesheet";
+import { GlobalContextProvider } from "./contexts/GlobalContext";
 
 const App = () => {
   const router = createBrowserRouter(
     createRoutesFromElements(
       <Route path="/">
-        <Route path="/" element={<MainLayout />}>
+        {/* Fix: Wrap the MainLayout component inside the element prop */}
+        <Route
+          path="/"
+          element={
+            <GlobalContextProvider>
+              <MainLayout />
+            </GlobalContextProvider>
+          }
+        >
           <Route index element={<Dashboard />} />
           <Route path="leave" element={<Leave />} />
           <Route path="payroll" element={<Payroll />} />
           <Route path="tasks" element={<TaskManagement />} />
           <Route path="productivity" element={<Productivity />} />
-          <Route path="timesheet" element={<Timesheet/>} />
+          <Route path="timesheet" element={<Timesheet />} />
         </Route>
+
+        {/* These routes remain outside the GlobalContext */}
         <Route path="login" element={<Login />} />
-        <Route path="*" element={<NotFound />} />,
+        <Route path="*" element={<NotFound />} />
       </Route>,
     ),
   );

@@ -1,32 +1,24 @@
-// import { useContext, useEffect } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
-import axios from "axios";
-
-import Navbar_top from "../components/Navbar_top";
-import Navbar_side from "../components/Navbar_side";
+import { Outlet } from "react-router-dom";
 import { Slide, ToastContainer } from "react-toastify";
 
-const MainLayout = () => {
-  const navigator = useNavigate();
-  useEffect(() => {
-    const checkLogin = async () => {
-      console.log("checking login status");
-      await axios.get("/api/auth/checkloggedin").catch(() => {
-        navigator("/login");
-      });
-      console.log("User is logged in");
-    };
+import Navbar_top from "../components/Navbar_top";
+import Sidebar from "../components/Sidebar";
+import {
+  GlobalContextProvider,
+  useGlobalContext,
+} from "../contexts/GlobalContext.tsx";
 
-    checkLogin();
-  }, [navigator]);
+const LayoutContent = () => {
+  const { userData, isLoading } = useGlobalContext();
 
   return (
-    <div className="w-full">
+    <div className="w-full h-screen overflow-hidden flex flex-col bg-background">
       <Navbar_top />
-      <div className="grid grid-cols-[auto_1fr] gap-4 p-5 min-h-screen">
-        <Navbar_side />
-        <div>
+
+      <div className="flex-1 grid grid-cols-[auto_1fr] gap-4 p-3 min-h-0">
+        <Sidebar userData={userData} isLoading={isLoading} />
+
+        <div className="h-full overflow-y-auto overflow-x-hidden relative rounded-3xl">
           <ToastContainer
             position="top-right"
             autoClose={5000}
@@ -44,6 +36,14 @@ const MainLayout = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+const MainLayout = () => {
+  return (
+    <GlobalContextProvider>
+      <LayoutContent />
+    </GlobalContextProvider>
   );
 };
 

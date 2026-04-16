@@ -5,12 +5,15 @@ export const taskSchema = new mongoose.Schema({
     type: mongoose.Schema.ObjectId,
     required: true,
   },
+  completedOn: {
+    type: Date,
+  },
   title: {
     type: String,
     required: true,
   }, 
   description: {
-    type: string,
+    type: String,
     required: false,
   },
   deadLine: {

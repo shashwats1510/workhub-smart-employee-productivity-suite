@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import axios from "axios";
 import {
   Clock,
   Coffee,
@@ -10,13 +11,17 @@ import {
   LogIn,
   AlertCircle,
 } from "lucide-react";
+import { useGlobalContext } from "../contexts/GlobalContext";
 
 type WorkStatus = "Logged Out" | "Working" | "Break" | "Lunch Break" | "Idle";
 
 const Timesheet = () => {
+  const { userData, refreshUser } = useGlobalContext();
+
   // Live states
   const [status, setStatus] = useState<WorkStatus>("Logged Out");
   const [selectedStatus, setSelectedStatus] = useState<WorkStatus>("Working");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Time tracking states
   const [punchInTime, setPunchInTime] = useState<string | null>(null);
@@ -39,14 +44,41 @@ const Timesheet = () => {
     return `${h}:${m}:${s}`;
   };
 
-  // Helper to get current time string
-  const getCurrentTime = () => {
-    return new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
+  // Sync with Backend Data on Mount or User Update
+  useEffect(() => {
+    if (!userData?.attendance) return;
+
+    // Find if there is an attendance record for today
+    const today = new Date().setHours(0, 0, 0, 0);
+    const todaysRecord = userData.attendance.find((record: any) => {
+      return new Date(record.date).setHours(0, 0, 0, 0) === today;
     });
-  };
+
+    if (todaysRecord?.clockIn) {
+      const clockInDate = new Date(todaysRecord.clockIn);
+      setPunchInTime(clockInDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+
+      if (!todaysRecord.clockOut) {
+        // User is clocked in but hasn't clocked out yet
+        setStatus("Working");
+        setSelectedStatus("Working");
+        
+        // Calculate elapsed time since clock in
+        const elapsedSeconds = Math.floor((Date.now() - clockInDate.getTime()) / 1000);
+        setWorkSeconds(elapsedSeconds);
+      } else {
+        // User has already completed their shift for today
+        const clockOutDate = new Date(todaysRecord.clockOut);
+        setPunchOutTime(clockOutDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+        setStatus("Logged Out");
+        setSelectedStatus("Logged Out");
+
+        // Calculate total time worked between clock in and clock out
+        const totalSeconds = Math.floor((clockOutDate.getTime() - clockInDate.getTime()) / 1000);
+        setWorkSeconds(totalSeconds);
+      }
+    }
+  }, [userData]);
 
   // Main Timer Effect
   useEffect(() => {
@@ -59,17 +91,13 @@ const Timesheet = () => {
     return () => clearInterval(interval);
   }, [status]);
 
-  // Idle Timeout Mechanism (Simulated for demonstration)
-  // If user is on break for more than 10 seconds without clicking update, switch to Idle.
+  // Idle Timeout Mechanism
   useEffect(() => {
     let timeout: number;
     setIdleWarning(false);
 
     if (status === "Break" || status === "Lunch Break") {
-      // Show warning at 5 seconds
       const warningTimeout = setTimeout(() => setIdleWarning(true), 5000);
-
-      // Force idle at 10 seconds
       timeout = setTimeout(() => {
         setStatus("Idle");
         setSelectedStatus("Idle");
@@ -83,31 +111,62 @@ const Timesheet = () => {
     }
   }, [status]);
 
-  // Actions
-  const handlePunchIn = () => {
-    setPunchInTime(getCurrentTime());
-    setPunchOutTime(null);
-    setStatus("Working");
-    setSelectedStatus("Working");
-    setWorkSeconds(0);
-    setBreakSeconds(0);
+  // Actions connecting to Backend
+  const handlePunchIn = async () => {
+    if (!userData?._id) return;
+    setIsSubmitting(true);
+    
+    try {
+      const now = new Date().toISOString();
+      const res = await axios.post("/api/management/markAttendance", {
+        userId: userData._id,
+        date: now,
+        status: "Present",
+        clockIn: now,
+      });
+
+      if (res.data.success) {
+        await refreshUser(); // Fetch updated data from context
+      }
+    } catch (error) {
+      console.error("Failed to clock in:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handlePunchOut = () => {
-    setPunchOutTime(getCurrentTime());
-    setStatus("Logged Out");
-    setSelectedStatus("Logged Out");
+  const handlePunchOut = async () => {
+    if (!userData?._id) return;
+    setIsSubmitting(true);
+    
+    try {
+      const now = new Date().toISOString();
+      const res = await axios.post("/api/management/markAttendance", {
+        userId: userData._id,
+        date: now,
+        clockOut: now,
+      });
+
+      if (res.data.success) {
+        await refreshUser(); // Fetch updated data to finalize shift
+        setStatus("Logged Out");
+        setSelectedStatus("Logged Out");
+      }
+    } catch (error) {
+      console.error("Failed to clock out:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleUpdateStatus = () => {
-    if (status === "Logged Out") return; // Prevent updates if not punched in
+    if (status === "Logged Out") return; 
     setStatus(selectedStatus);
-    setIdleWarning(false); // Clear idle warning if they manually updated
+    setIdleWarning(false); 
   };
 
   return (
     <div className="flex min-h-screen relative bg-background text-text-primary font-sans p-6 sm:p-12 justify-center items-start">
-      {/* Background Ambient Gradient (From Login Page) */}
       <div className="absolute pointer-events-none inset-0 bg-[radial-gradient(circle_at_top,rgba(70,2,125,0.2)_0%,transparent_70%)]"></div>
 
       <div className="w-full max-w-5xl relative z-10 space-y-10 mt-4 lg:mt-12">
@@ -120,12 +179,11 @@ const Timesheet = () => {
             Your timesheet for the day
           </h1>
           <p className="text-text-secondary text-lg">
-            Manage your daily attendance, track your breaks, and monitor
-            productivity.
+            Manage your daily attendance, track your breaks, and monitor productivity.
           </p>
         </div>
 
-        {/* Main Content Split (Left & Right) */}
+        {/* Main Content Split */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
           {/* LEFT PANEL: Statistics & Logs */}
           <div className="bg-surface-elevated border border-border-strong rounded-3xl p-8 shadow-xl flex flex-col space-y-8">
@@ -155,8 +213,7 @@ const Timesheet = () => {
 
               <div className="flex justify-between items-center bg-primary-900/10 p-4 rounded-xl border border-primary-800/30">
                 <span className="text-text-secondary font-medium flex items-center gap-2">
-                  <PlayCircle className="w-4 h-4 text-primary-400" /> Work so
-                  far:
+                  <PlayCircle className="w-4 h-4 text-primary-400" /> Work so far:
                 </span>
                 <span className="font-extrabold text-2xl text-primary-400 font-mono tracking-wider">
                   {formatDuration(workSeconds)}
@@ -181,9 +238,7 @@ const Timesheet = () => {
               Current Status
             </h2>
 
-            {/* Status Display Area */}
             <div className="flex-grow space-y-6">
-              {/* Dynamic Status Indicator */}
               <div
                 className={`p-4 rounded-xl border text-center flex flex-col items-center justify-center gap-2 transition-all duration-300 ${
                   status === "Working"
@@ -203,7 +258,6 @@ const Timesheet = () => {
                 </span>
               </div>
 
-              {/* Status Update Form */}
               <div className="space-y-3 pt-4">
                 <label className="text-sm font-medium text-text-secondary">
                   Update your status:
@@ -212,18 +266,15 @@ const Timesheet = () => {
                   <div className="relative flex-grow">
                     <select
                       value={selectedStatus}
-                      onChange={(e) =>
-                        setSelectedStatus(e.target.value as WorkStatus)
-                      }
-                      disabled={status === "Logged Out"}
-                      className="w-full appearance-none rounded-lg border border-border-strong bg-background-input px-4 py-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      onChange={(e) => setSelectedStatus(e.target.value as WorkStatus)}
+                      disabled={status === "Logged Out" || !!punchOutTime}
+                      className="w-full appearance-none rounded-lg border border-border-strong bg-background-input px-4 py-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <option value="Working">Working</option>
                       <option value="Break">Short Break</option>
                       <option value="Lunch Break">Lunch Break</option>
                       <option value="Idle">Idle</option>
                     </select>
-                    {/* Custom Dropdown Arrow */}
                     <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted">
                       <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
                         <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
@@ -233,14 +284,13 @@ const Timesheet = () => {
 
                   <button
                     onClick={handleUpdateStatus}
-                    disabled={status === "Logged Out"}
+                    disabled={status === "Logged Out" || !!punchOutTime}
                     className="flex shrink-0 items-center justify-center gap-2 cursor-pointer rounded-lg px-6 py-3 text-sm font-semibold border border-border-strong hover:border-text-primary hover:bg-background-input focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                   >
                     Update
                   </button>
                 </div>
 
-                {/* Idle Warning Message */}
                 {idleWarning && (
                   <div className="flex items-center gap-2 text-warning text-sm font-medium animate-pulse mt-2">
                     <AlertCircle className="w-4 h-4" />
@@ -250,23 +300,22 @@ const Timesheet = () => {
               </div>
             </div>
 
-            {/* Bottom Actions (Punch In / Punch Out) */}
             <div className="grid grid-cols-2 gap-4 mt-8 pt-6 border-t border-border-subtle">
               <button
                 onClick={handlePunchIn}
-                disabled={status !== "Logged Out"}
-                className="w-full flex items-center justify-center gap-2 cursor-pointer rounded-lg py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 transition-all bg-primary-600 hover:bg-primary-500 hover:scale-[1.02]"
+                disabled={status !== "Logged Out" || !!punchInTime || isSubmitting}
+                className="w-full flex items-center justify-center gap-2 cursor-pointer rounded-lg py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 hover:opacity-90 focus:outline-none disabled:opacity-50 transition-all bg-primary-600 hover:bg-primary-500 hover:scale-[1.02]"
               >
-                Login for the day
+                {isSubmitting && !punchInTime ? "Loading..." : "Login for the day"}
               </button>
 
               <button
                 onClick={handlePunchOut}
-                disabled={status === "Logged Out"}
-                className="w-full flex items-center justify-center gap-2 cursor-pointer rounded-lg py-3.5 text-sm font-semibold text-white shadow-lg shadow-secondary/20 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-secondary disabled:opacity-50 transition-all bg-secondary hover:bg-secondary-hover hover:scale-[1.02]"
+                disabled={status === "Logged Out" || !!punchOutTime || isSubmitting}
+                className="w-full flex items-center justify-center gap-2 cursor-pointer rounded-lg py-3.5 text-sm font-semibold text-white shadow-lg shadow-secondary/20 hover:opacity-90 focus:outline-none disabled:opacity-50 transition-all bg-secondary hover:bg-secondary-hover hover:scale-[1.02]"
               >
                 <StopCircle className="w-4 h-4" />
-                Logout for the day
+                {isSubmitting && punchInTime ? "Loading..." : "Logout for the day"}
               </button>
             </div>
           </div>

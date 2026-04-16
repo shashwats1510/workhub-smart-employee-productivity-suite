@@ -163,7 +163,7 @@ const AdminPanel = () => {
   };
 
   const getAllUsers = async () => {
-    return axios.get("/api/info/getAllUsers");
+   return axios.get("/api/info/getAllUsers");
   };
 
   const filteredUsers = users.filter(
@@ -179,11 +179,14 @@ const AdminPanel = () => {
   }, []);
 
   return (
-    <div className="flex h-screen bg-background text-text-primary font-sans overflow-hidden border-2 rounded-lg border-accent-700">
+    // Added h-full and flex-col here to make it span the layout height
+    <div className="flex flex-col h-full bg-background text-text-primary font-sans overflow-hidden border-2 rounded-lg border-accent-700">
+      
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-        {/* Header */}
-        <header className="h-20 border-b border-(--color-border-subtle) bg-background/50 backdrop-blur-md flex items-center justify-between px-8 z-10">
+      <main className="flex-1 flex flex-col overflow-hidden relative">
+        
+        {/* Header (Fixed at top) */}
+        <header className="h-20 shrink-0 border-b border-(--color-border-subtle) bg-background/50 backdrop-blur-md flex items-center justify-between px-8 z-10">
           <div>
             <h1 className="text-2xl font-bold text-left mb-2">Accounts</h1>
             <p className="text-sm text-text-muted">
@@ -200,8 +203,9 @@ const AdminPanel = () => {
           </button>
         </header>
 
-        {/* Content Area */}
+        {/* Content Area (Scrolls internally) */}
         <div className="flex-1 overflow-auto p-8 z-10">
+          
           {/* Search & Filters */}
           <div className="flex items-center gap-4 mb-6">
             <div className="relative flex-1 max-w-md">
@@ -242,7 +246,7 @@ const AdminPanel = () => {
                 {filteredUsers.length === 0 && (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={7}
                       className="px-6 py-12 text-center text-text-muted"
                     >
                       No users found
@@ -377,13 +381,13 @@ const AdminPanel = () => {
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="flex-1 py-2.5 rounded-lg border border-(--color-border-subtle) text-text-primary hover:bg-(--color-background-elevated) transition-colors font-medium text-sm"
+                  className="flex-1 py-2.5 rounded-lg border border-(--color-border-subtle) text-text-primary hover:bg-(--color-background-elevated) transition-colors font-medium text-sm cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 rounded-lg bg-primary-600 hover:bg-(--color-primary-500) text-white font-medium text-sm shadow-lg shadow-(--color-primary-600)/20 transition-all"
+                  className="flex-1 py-2.5 rounded-lg bg-primary-600 hover:bg-(--color-primary-500) text-white font-medium text-sm shadow-lg shadow-(--color-primary-600)/20 transition-all cursor-pointer"
                 >
                   {modalMode === "create" ? "Create Account" : "Save Changes"}
                 </button>

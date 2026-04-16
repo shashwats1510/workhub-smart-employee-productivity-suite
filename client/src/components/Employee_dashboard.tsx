@@ -1,6 +1,6 @@
 import Dashboard_tile from "./Dashboard_tile";
 
-const Home = () => {
+const EmployeePanel= () => {
   return (
     <div className="flex justify-center items-center">
       <Dashboard_tile title="Activity for the day" redirect="/login">
@@ -10,5 +10,5 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default EmployeePanel;
 
