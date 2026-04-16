@@ -4,6 +4,7 @@ import {
   editUser,
   createAccount,
   login,
+  logout,
   deleteUser,
 } from "../controllers/authController.js";
 import {
@@ -16,8 +17,9 @@ const router = express.Router();
 
 router.post("/login", loginValidation, login);
 router.get("/checkloggedin", checkLoggedIn);
+router.post("/logout", isLoggedIn, logout);
 
-router.post("/create-account", isLoggedIn, signupValidation, createAccount);
+router.post("/create-account", signupValidation, createAccount);
 router.post("/editUserDetails", isLoggedIn, editUser);
 router.get("/deleteUser", isLoggedIn, deleteUser);
 // router.get("/logout", isLoggedIn, logout);

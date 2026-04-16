@@ -1,15 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import {
   Briefcase,
   ListTodo,
-  Trash2,
   CheckCircle2,
   Circle,
   LayoutList,
   Target,
 } from "lucide-react";
+import { useGlobalContext } from "../contexts/GlobalContext";
 
-// Task interface
 interface Task {
   id: string;
   text: string;
@@ -18,48 +18,72 @@ interface Task {
 }
 
 const TaskManagement = () => {
-  // Initial dummy tasks
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: "1",
-      text: "Review Q3 Marketing Deck",
-      completed: false,
-      priority: "high",
-    },
-    {
-      id: "2",
-      text: "Approve pending leave requests",
-      completed: false,
-      priority: "medium",
-    },
-    {
-      id: "3",
-      text: "Update weekly team sync notes",
-      completed: true,
-      priority: "low",
-    },
-    {
-      id: "4",
-      text: "Submit final payroll report",
-      completed: false,
-      priority: "high",
-    },
-  ]);
+  const { userData } = useGlobalContext();
 
-  const [newTaskText, setNewTaskText] = useState("");
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Derived stats for the left panel
+  useEffect(() => {
+    const fetchTasks = async () => {
+      if (!userData?._id) return;
+
+      try {
+        setIsLoading(true);
+        const res = await axios.get(`/api/management/tasks?id=${userData._id}`);
+
+        if (res.data.success) {
+          const fetchedTasks = res.data.data.map((task: any) => ({
+            id: task._id,
+            text: task.title,
+            completed: task.status,
+            priority: "medium", 
+          }));
+
+          setTasks(fetchedTasks);
+        }
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTasks();
+  }, [userData]);
+
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter((t) => t.completed).length;
   const progressPercentage =
-    totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+    totalTasks === 0 ? 100 : Math.round((completedTasks / totalTasks) * 100);
 
-  const toggleTaskStatus = (id: string) => {
+  // Updated to connect with your new backend controller
+  const toggleTaskStatus = async (id: string, currentStatus: boolean) => {
+    const newStatus = !currentStatus;
+
+    // 1. Optimistic UI Update (Instantly update the screen for a snappy feel)
     setTasks(
       tasks.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task,
-      ),
+        task.id === id ? { ...task, completed: newStatus } : task
+      )
     );
+
+    // 2. Make the API Call
+    try {
+      // Assuming your route is set up like this
+      await axios.put("/api/management/tasks/toggle", {
+        taskId: id,
+        status: newStatus,
+      });
+    } catch (error) {
+      console.error("Failed to update task status:", error);
+      
+      // 3. Rollback UI if the API call fails
+      setTasks(
+        tasks.map((task) =>
+          task.id === id ? { ...task, completed: currentStatus } : task
+        )
+      );
+    }
   };
 
   const deleteTask = (id: string) => {
@@ -68,10 +92,8 @@ const TaskManagement = () => {
 
   return (
     <div className="flex min-h-screen gap-12 relative bg-background text-text-primary font-sans overflow-hidden rounded-xl">
-      {/* Ambient Background Gradient (replicated from Login) */}
       <div className="absolute pointer-events-none inset-0 bg-[radial-gradient(circle_at_top,rgba(70,2,125,0.25)_0%,transparent_70%)]"></div>
 
-      {/* Left Panel - Productivity Dashboard */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-surface-elevated items-center justify-center p-12 border-r border-border-subtle">
         <div className="relative z-10 w-full max-w-lg">
           <div className="flex items-center gap-3 mb-10">
@@ -94,7 +116,6 @@ const TaskManagement = () => {
             </p>
           </div>
 
-          {/* Dynamic Progress Card */}
           <div className="bg-background border border-border-strong rounded-2xl p-6 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-5">
               <Target className="w-32 h-32" />
@@ -112,7 +133,6 @@ const TaskManagement = () => {
                 </span>
               </div>
 
-              {/* Progress Bar */}
               <div className="w-full h-3 bg-background-input rounded-full overflow-hidden">
                 <div
                   className="h-full bg-secondary transition-all duration-700 ease-out rounded-full relative"
@@ -133,10 +153,8 @@ const TaskManagement = () => {
         </div>
       </div>
 
-      {/* Right Panel - To-Do List Interactive Area */}
       <div className="flex w-full lg:w-1/2 items-start justify-center p-6 sm:p-12 z-10 pt-20 lg:pt-32 h-screen overflow-y-auto custom-scrollbar">
         <div className="w-full max-w-md space-y-8">
-          {/* Mobile Header */}
           <div className="lg:hidden flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
               <Briefcase className="w-5 h-5 text-primary-foreground" />
@@ -148,9 +166,12 @@ const TaskManagement = () => {
             <h2 className="text-3xl font-bold text-text-primary">My Tasks</h2>
           </div>
 
-          {/* Task List */}
           <div className="space-y-3 mt-8">
-            {tasks.length === 0 ? (
+            {isLoading ? (
+              <div className="text-center py-12 text-text-muted">
+                Loading tasks...
+              </div>
+            ) : tasks.length === 0 ? (
               <div className="text-center py-12 border border-border-strong border-dashed rounded-xl bg-surface/50">
                 <ListTodo className="w-10 h-10 mx-auto text-text-muted mb-3 opacity-50" />
                 <p className="text-text-secondary font-medium">
@@ -172,7 +193,7 @@ const TaskManagement = () => {
                 >
                   <div
                     className="flex items-start gap-3 flex-grow cursor-pointer"
-                    onClick={() => toggleTaskStatus(task.id)}
+                    onClick={() => toggleTaskStatus(task.id, task.completed)}
                   >
                     <button
                       className={`mt-0.5 shrink-0 focus:outline-none transition-colors ${task.completed ? "text-success" : "text-text-muted hover:text-primary-400"}`}

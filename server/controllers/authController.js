@@ -53,7 +53,7 @@ export const login = async (req, res) => {
     const userDoc = await userModel.findOne({ email });
     if (!userDoc) return res.status(404).json({ message: "user not found" });
 
-    const passOk = bcrypt.compare(password, userDoc.password);
+    const passOk = await bcrypt.compare(password, userDoc.password);
     if (!passOk)
       return res
         .status(403)
@@ -66,7 +66,7 @@ export const login = async (req, res) => {
       (error, token) => {
         if (error) throw error;
         res.cookie("token", token);
-        res.cookie("user_id", userDoc._id);
+        res.cookie("user_id", userDoc._id.toString());
         res.status(200).json({ id: userDoc._id, email });
       },
     );
@@ -182,6 +182,24 @@ export const deleteUser = async (req, res) => {
     }
 
     res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+export const logout = async (req, res) => {
+  try {
+    res.clearCookie("token");
+    res.clearCookie("user_id");
+
+    return res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    console.error("Logout error:", error);
+    return res.status(500).json({
       success: false,
       message: "Internal Server Error",
     });

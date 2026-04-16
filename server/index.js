@@ -6,6 +6,7 @@ import cors from "cors";
 import initializeDB from "./db.js";
 import authRouter from "./routes/authRouter.js";
 import infoRouter from "./routes/infoRouter.js";
+import managementRouter from "./routes/managementRouter.js";
 
 const app = express();
 app.disable("x-powered-by");
@@ -25,6 +26,7 @@ app.use(express.json());
 
 app.use("/auth", authRouter);
 app.use("/info", infoRouter);
+app.use("/management", managementRouter);
 
 app.get("/ping", (req, res) => {
   res.json("pong");

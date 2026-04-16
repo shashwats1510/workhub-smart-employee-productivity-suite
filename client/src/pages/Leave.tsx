@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import {
   CalendarDays,
   HeartPulse,
@@ -8,10 +9,13 @@ import {
   CheckCircle2,
   Briefcase,
 } from "lucide-react";
+import { useGlobalContext } from "../contexts/GlobalContext";
 
 const Leave = () => {
+  const { userData } = useGlobalContext();
+
   // State for the leave application form
-  const [leaveType, setLeaveType] = useState("casual");
+  const [leaveType, setLeaveType] = useState("casual leave");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [reason, setReason] = useState("");
@@ -19,48 +23,84 @@ const Leave = () => {
   // Form submission state
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  // Dummy data for leave balances
+  // Default values while loading
   const [balances, setBalances] = useState({
-    sick: { total: 10, remaining: 4 },
-    casual: { total: 12, remaining: 9 },
+    sick: { total: 0, remaining: 0 },
+    casual: { total: 0, remaining: 0 },
   });
 
-  const handleApplyLeave = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (userData && userData.leaves) {
+      setBalances({
+        sick: {
+          total: Number(userData.leaves.sickLeave?.total) || 10,
+          remaining: Number(userData.leaves.sickLeave?.remaining) || 4,
+        },
+        casual: {
+          total: Number(userData.leaves.casualLeave?.total) || 12,
+          remaining: Number(userData.leaves.casualLeave?.remaining) || 9,
+        },
+      });
+    }
+  }, [userData]);
+
+  const handleApplyLeave = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage("");
+
+    if (!userData?._id) {
+      setErrorMessage("User session not found. Please log in again.");
+      return;
+    }
+
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Assuming your proxy is set up to route /api to your backend
+      const response = await axios.post("/api/management/applyforleave", {
+        userId: userData._id,
+        leaveType,
+        startDate,
+        endDate,
+        reason,
+      });
+
+      if (response.data.success) {
+        setShowSuccess(true);
+
+        // Update the local balances directly from the backend response
+        const newBalances = response.data.data.balances;
+        setBalances({
+          sick: {
+            total: newBalances.sick.total,
+            remaining: newBalances.sick.remaining,
+          },
+          casual: {
+            total: newBalances.casual.total,
+            remaining: newBalances.casual.remaining,
+          },
+        });
+
+        // Reset form
+        setStartDate("");
+        setEndDate("");
+        setReason("");
+
+        // Hide success message after 3 seconds
+        setTimeout(() => setShowSuccess(false), 3000);
+      }
+    } catch (error: any) {
+      console.error("Error applying for leave:", error);
+      // Extract the error message from the backend if it exists
+      setErrorMessage(
+        error.response?.data?.message ||
+          "Failed to apply for leave. Please try again.",
+      );
+    } finally {
       setIsLoading(false);
-      setShowSuccess(true);
-
-      // Simulate draining the stack locally for demonstration
-      setBalances((prev) => ({
-        ...prev,
-        [leaveType === "sick leave" ? "sick" : "casual"]: {
-          ...prev[
-            leaveType === "sick leave"
-              ? "sick"
-              : ("casual" as keyof typeof prev)
-          ],
-          remaining:
-            prev[
-              leaveType === "sick leave"
-                ? "sick"
-                : ("casual" as keyof typeof prev)
-            ].remaining - 1,
-        },
-      }));
-
-      // Reset form
-      setStartDate("");
-      setEndDate("");
-      setReason("");
-
-      // Hide success message after 3 seconds
-      setTimeout(() => setShowSuccess(false), 3000);
-    }, 1500);
+    }
   };
 
   return (
@@ -91,7 +131,7 @@ const Leave = () => {
                 <div
                   className="bg-secondary w-full transition-all duration-1000 ease-in-out relative flex items-start justify-center pt-4"
                   style={{
-                    height: `${(balances.sick.remaining / balances.sick.total) * 100}%`,
+                    height: `${balances.sick.total > 0 ? (balances.sick.remaining / balances.sick.total) * 100 : 0}%`,
                   }}
                 >
                   <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.1)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.1)_50%,rgba(255,255,255,0.1)_75%,transparent_75%,transparent)] bg-[length:1rem_1rem]"></div>
@@ -118,7 +158,7 @@ const Leave = () => {
                 <div
                   className="bg-primary-500 w-full transition-all duration-1000 ease-in-out relative flex items-start justify-center pt-4"
                   style={{
-                    height: `${(balances.casual.remaining / balances.casual.total) * 100}%`,
+                    height: `${balances.casual.total > 0 ? (balances.casual.remaining / balances.casual.total) * 100 : 0}%`,
                   }}
                 >
                   <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.1)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.1)_50%,rgba(255,255,255,0.1)_75%,transparent_75%,transparent)] bg-[length:1rem_1rem]"></div>
@@ -165,6 +205,12 @@ const Leave = () => {
               <p className="text-sm font-medium">
                 Leave application submitted successfully!
               </p>
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="bg-error/10 border border-error text-error rounded-md p-4 flex items-center gap-3 animate-in fade-in zoom-in duration-300">
+              <p className="text-sm font-medium">{errorMessage}</p>
             </div>
           )}
 

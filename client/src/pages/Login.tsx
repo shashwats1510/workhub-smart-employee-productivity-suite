@@ -20,12 +20,19 @@ const Login = () => {
     setErrorState(false);
 
     try {
-      const res = await axios.post("/api/auth/login", {
-        email,
-        password,
-      });
+      const res = await axios.post(
+        "/api/auth/login",
+        {
+          email,
+          password,
+        },
+        {
+          withCredentials: true,
+        },
+      );
 
       if (res.status === 200) {
+        console.log(res.data.id);
         navigator("/");
       }
     } catch (error: any) {
@@ -33,7 +40,7 @@ const Login = () => {
         const status = error.response.status;
 
         if (status === 500) {
-          setErrorMessage("Something went wrong!");
+          setErrorMessage("Something went wrong on the server!");
         } else {
           setErrorMessage(
             "An account with that email/password combination could not be found",
@@ -61,7 +68,7 @@ const Login = () => {
     } catch (err) {
       console.log("Something went wrong: ", err);
     }
-  }, []);
+  }, [navigator]);
 
   return (
     <div className="flex min-h-screen gap-12 relative">
