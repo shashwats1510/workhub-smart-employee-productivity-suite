@@ -30,6 +30,6 @@ export interface Account {
   phoneNo: string;
   dob: string;
   tasks: string[];
-  productivity: string | null;
+  productivity: number;
   status?: "Active" | "Inactive";
 }

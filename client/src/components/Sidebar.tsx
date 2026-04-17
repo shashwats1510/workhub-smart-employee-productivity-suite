@@ -1,9 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 
-import type { Account } from "../types";
-
-type props = { userData: Account | null; isLoading: boolean };
+import { useGlobalContext } from "../contexts/GlobalContext";
 
 const navItems = [
   {
@@ -12,7 +10,7 @@ const navItems = [
     redirect: "/",
   },
   {
-    name: "Tasks Assigned",
+    name: "Tasks",
     icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
     redirect: "/tasks",
   },
@@ -38,8 +36,10 @@ const navItems = [
   },
 ];
 
-const Sidebar = ({ userData, isLoading }: props) => {
-  console.log(userData);
+const Sidebar = () => {
+  // Fetch data directly from Context instead of props
+  const { userData, isLoading } = useGlobalContext();
+
   const navigator = useNavigate();
   const location = useLocation();
 
@@ -54,11 +54,16 @@ const Sidebar = ({ userData, isLoading }: props) => {
 
   const initial = userData?.name ? userData.name.charAt(0).toUpperCase() : "";
 
-  // 1. Filter the items based on the user's role
-  const visibleNavItems =
-    userData?.post === "Admin"
-      ? navItems.filter((item) => item.name === "Dashboard")
-      : navItems;
+  // Filter the items based on the user's role
+  let visibleNavItems = navItems;
+
+  if (userData?.post === "Admin") {
+    // Admin only sees Dashboard
+    visibleNavItems = navItems.filter((item) => item.name === "Dashboard");
+  } else if (userData?.post === "Manager") {
+    // Managers see everything EXCEPT Productivity
+    visibleNavItems = navItems.filter((item) => item.name !== "Productivity");
+  }
 
   return (
     <aside className="w-64 bg-background flex flex-col gap-6">
@@ -82,7 +87,6 @@ const Sidebar = ({ userData, isLoading }: props) => {
 
         {/* Navigation List */}
         <nav className="space-y-1.5 flex-1" aria-label="Sidebar Navigation">
-          {/* 2. Map over visibleNavItems instead of the full navItems array */}
           {visibleNavItems.map((item) => {
             const isActive = location.pathname === item.redirect;
 

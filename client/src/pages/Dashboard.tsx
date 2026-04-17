@@ -1,13 +1,12 @@
 import { useGlobalContext } from "../contexts/GlobalContext";
 
 import AdminPanel from "../components/Admin_dashboard";
-import ManagerPanel from "../components/Manager_dashboard"; // Ensure this exists
-import EmployeePanel from "../components/Employee_dashboard"; // Ensure this exists
+import ManagerPanel from "../components/Manager_dashboard";
+import EmployeePanel from "../components/Employee_dashboard";
 
 const Dashboard = () => {
   const { userData, isLoading } = useGlobalContext();
 
-  // 1. Handle the loading state so it doesn't flash errors before fetching finishes
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full text-text-muted animate-pulse">
@@ -16,7 +15,6 @@ const Dashboard = () => {
     );
   }
 
-  // 2. Handle the edge case where the user data fails to load
   if (!userData) {
     return (
       <div className="flex items-center justify-center h-full text-error">
@@ -25,7 +23,6 @@ const Dashboard = () => {
     );
   }
 
-  // 3. Render the appropriate panel based on the user's post
   switch (userData.post) {
     case "Admin":
       return <AdminPanel />;

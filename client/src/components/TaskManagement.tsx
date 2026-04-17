@@ -29,7 +29,7 @@ const TaskManagement = () => {
 
       try {
         setIsLoading(true);
-        const res = await axios.get(`/api/management/tasks?id=${userData._id}`);
+        const res = await axios.get(`/api/management/getUserTasks?id=${userData._id}`);
 
         if (res.data.success) {
           const fetchedTasks = res.data.data.map((task: any) => ({
