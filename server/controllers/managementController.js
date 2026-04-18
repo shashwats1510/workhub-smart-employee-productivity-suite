@@ -289,3 +289,73 @@ export const createTask = async (req, res) => {
     });
   }
 };
+
+export const editUserDetails = async (req, res) => {
+  try {
+    // Extract everything that MIGHT be sent by either the Admin or Manager panels
+    const { id, name, email, post, role, salary, phoneNo, dob, password } = req.body;
+
+    // 1. Basic validation
+    if (!id) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "User ID is required to perform an update." 
+      });
+    }
+
+    // 2. Fetch the user document
+    const user = await userModel.findById(id);
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "User not found in the database." 
+      });
+    }
+
+    // 3. Dynamically update fields ONLY if they were provided in the request
+    if (name !== undefined) user.name = name;
+    if (email !== undefined) user.email = email;
+    if (post !== undefined) user.post = post;
+    if (role !== undefined) user.role = role;
+    if (salary !== undefined) user.salary = salary;
+    if (phoneNo !== undefined) user.phoneNo = phoneNo;
+    if (dob !== undefined) user.dob = new Date(dob);
+
+    // 4. Handle Password specifically (only update if it's not empty)
+    // The Admin panel sends an empty string if they don't want to change it.
+    if (password && password.trim() !== "") {
+      user.password = password;
+    }
+
+    // 5. Save the document
+    // This will automatically trigger your userSchema.pre("save") middleware to hash the password if it was changed!
+    await user.save();
+
+    // 6. Return success
+    return res.status(200).json({
+      success: true,
+      message: "User details updated successfully!",
+      data: {
+        _id: user._id,
+        name: user.name,
+        role: user.role,
+        post: user.post
+      }
+    });
+
+  } catch (error) {
+    // Handle duplicate email errors (MongoDB error code 11000)
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: "That email is already in use by another account."
+      });
+    }
+
+    console.error("Error editing user details:", error);
+    return res.status(500).json({ 
+      success: false, 
+      message: "Internal server error while updating user details." 
+    });
+  }
+};

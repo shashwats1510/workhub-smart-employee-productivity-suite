@@ -85,7 +85,7 @@ const ManagerPanel = () => {
     e.preventDefault();
     try {
       toast.promise(
-        axios.post("/api/auth/editUserDetails", {
+        axios.post("/api/management/editUserDetails", {
           ...formData,
           id: selectedUserId,
         }),
