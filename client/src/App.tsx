@@ -3,7 +3,7 @@ import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Leave from "./pages/Leave";
 import Payroll from "./pages/Payroll";
-import TaskManagement from "./pages/TaskManagement";
+import Tasks from "./pages/Tasks";
 import Productivity from "./pages/Productivity";
 
 import MainLayout from "./layout/MainLayout";
@@ -23,7 +23,6 @@ const App = () => {
   const router = createBrowserRouter(
     createRoutesFromElements(
       <Route path="/">
-        {/* Fix: Wrap the MainLayout component inside the element prop */}
         <Route
           path="/"
           element={
@@ -35,7 +34,7 @@ const App = () => {
           <Route index element={<Dashboard />} />
           <Route path="leave" element={<Leave />} />
           <Route path="payroll" element={<Payroll />} />
-          <Route path="tasks" element={<TaskManagement />} />
+          <Route path="tasks" element={<Tasks/>} />
           <Route path="productivity" element={<Productivity />} />
           <Route path="timesheet" element={<Timesheet />} />
         </Route>

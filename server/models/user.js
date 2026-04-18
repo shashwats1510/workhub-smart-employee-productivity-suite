@@ -62,9 +62,8 @@ export const userSchema = new mongoose.Schema({
   dob: { type: Date, required: true },
   tasks: { type: [mongoose.Schema.ObjectId], ref: "Task", default: [] },
   productivity: {
-    type: mongoose.Schema.ObjectId,
-    ref: "Productivity",
-    default: null,
+    type: Number,
+    default: 100,
   },
 });
 

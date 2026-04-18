@@ -5,18 +5,15 @@ import Navbar_top from "../components/Navbar_top";
 import Sidebar from "../components/Sidebar";
 import {
   GlobalContextProvider,
-  useGlobalContext,
 } from "../contexts/GlobalContext.tsx";
 
 const LayoutContent = () => {
-  const { userData, isLoading } = useGlobalContext();
-
   return (
     <div className="w-full h-screen overflow-hidden flex flex-col bg-background">
       <Navbar_top />
 
       <div className="flex-1 grid grid-cols-[auto_1fr] gap-4 p-3 min-h-0">
-        <Sidebar userData={userData} isLoading={isLoading} />
+        <Sidebar />
 
         <div className="h-full overflow-y-auto overflow-x-hidden relative rounded-3xl">
           <ToastContainer

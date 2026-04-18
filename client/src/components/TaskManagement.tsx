@@ -29,14 +29,16 @@ const TaskManagement = () => {
 
       try {
         setIsLoading(true);
-        const res = await axios.get(`/api/management/tasks?id=${userData._id}`);
+        const res = await axios.get(
+          `/api/management/getUserTasks?id=${userData._id}`,
+        );
 
         if (res.data.success) {
           const fetchedTasks = res.data.data.map((task: any) => ({
             id: task._id,
             text: task.title,
             completed: task.status,
-            priority: "medium", 
+            priority: "medium",
           }));
 
           setTasks(fetchedTasks);
@@ -63,31 +65,27 @@ const TaskManagement = () => {
     // 1. Optimistic UI Update (Instantly update the screen for a snappy feel)
     setTasks(
       tasks.map((task) =>
-        task.id === id ? { ...task, completed: newStatus } : task
-      )
+        task.id === id ? { ...task, completed: newStatus } : task,
+      ),
     );
 
     // 2. Make the API Call
     try {
       // Assuming your route is set up like this
-      await axios.put("/api/management/tasks/toggle", {
+      await axios.put("/api/management/toggleTask", {
         taskId: id,
         status: newStatus,
       });
     } catch (error) {
       console.error("Failed to update task status:", error);
-      
+
       // 3. Rollback UI if the API call fails
       setTasks(
         tasks.map((task) =>
-          task.id === id ? { ...task, completed: currentStatus } : task
-        )
+          task.id === id ? { ...task, completed: currentStatus } : task,
+        ),
       );
     }
-  };
-
-  const deleteTask = (id: string) => {
-    setTasks(tasks.filter((task) => task.id !== id));
   };
 
   return (
@@ -138,7 +136,7 @@ const TaskManagement = () => {
                   className="h-full bg-secondary transition-all duration-700 ease-out rounded-full relative"
                   style={{ width: `${progressPercentage}%` }}
                 >
-                  <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.2)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.2)_50%,rgba(255,255,255,0.2)_75%,transparent_75%,transparent)] bg-[length:1rem_1rem]"></div>
+                  <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.2)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.2)_50%,rgba(255,255,255,0.2)_75%,transparent_75%,transparent)] bg-size-[1rem_1rem]"></div>
                 </div>
               </div>
 
@@ -192,7 +190,7 @@ const TaskManagement = () => {
                   }`}
                 >
                   <div
-                    className="flex items-start gap-3 flex-grow cursor-pointer"
+                    className="flex items-start gap-3 grow cursor-pointer"
                     onClick={() => toggleTaskStatus(task.id, task.completed)}
                   >
                     <button

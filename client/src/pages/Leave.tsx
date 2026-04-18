@@ -134,7 +134,7 @@ const Leave = () => {
                     height: `${balances.sick.total > 0 ? (balances.sick.remaining / balances.sick.total) * 100 : 0}%`,
                   }}
                 >
-                  <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.1)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.1)_50%,rgba(255,255,255,0.1)_75%,transparent_75%,transparent)] bg-[length:1rem_1rem]"></div>
+                  <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.1)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.1)_50%,rgba(255,255,255,0.1)_75%,transparent_75%,transparent)] bg-size-[1rem_1rem]"></div>
                   <span className="relative z-10 font-bold text-white text-xl drop-shadow-md">
                     {balances.sick.remaining}
                   </span>
@@ -161,7 +161,7 @@ const Leave = () => {
                     height: `${balances.casual.total > 0 ? (balances.casual.remaining / balances.casual.total) * 100 : 0}%`,
                   }}
                 >
-                  <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.1)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.1)_50%,rgba(255,255,255,0.1)_75%,transparent_75%,transparent)] bg-[length:1rem_1rem]"></div>
+                  <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.1)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.1)_50%,rgba(255,255,255,0.1)_75%,transparent_75%,transparent)] bg-size-[1rem_1rem]"></div>
                   <span className="relative z-10 font-bold text-white text-xl drop-shadow-md">
                     {balances.casual.remaining}
                   </span>

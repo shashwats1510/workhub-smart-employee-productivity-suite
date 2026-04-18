@@ -168,7 +168,7 @@ const Productivity = () => {
                 </div>
               </div>
 
-              <div className="flex-grow w-full min-h-[250px] relative mt-auto flex items-end">
+              <div className="grow w-full min-h-62.5 relative mt-auto flex items-end">
                 <svg
                   viewBox={`-10 -10 ${graphWidth + 20} ${graphHeight + 20}`}
                   className="w-full h-full overflow-visible drop-shadow-2xl"
@@ -272,7 +272,7 @@ const Productivity = () => {
                 </span>
               </div>
 
-              <div className="space-y-4 flex-grow flex flex-col justify-center">
+              <div className="space-y-4 grow flex flex-col justify-center">
                 {weeklyData.map((data) => {
                   const isEmpty = data.assigned === 0 && data.completed === 0;
                   const isPerfect =
@@ -334,7 +334,7 @@ const Productivity = () => {
                           ></div>
                         </div>
 
-                        <div className="text-right min-w-[80px]">
+                        <div className="text-right min-w-20">
                           <span
                             className={`text-2xl font-extrabold ${isPerfect ? "text-success" : isEmpty ? "text-text-disabled" : "text-text-primary"}`}
                           >

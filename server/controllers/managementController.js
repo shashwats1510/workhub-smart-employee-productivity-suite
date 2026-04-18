@@ -218,3 +218,74 @@ export const toggleTaskStatus = async (req, res) => {
       .json({ success: false, message: "Internal server error" });
   }
 };
+
+export const getEmployees = async (req, res) => {
+  try {
+    const employees = await userModel.find(
+      { post: "Employee" },
+      "name role post _id",
+    );
+
+    // If no employees are found, it will just return an empty array [], which is fine!
+    return res.status(200).json({
+      success: true,
+      data: employees,
+    });
+  } catch (error) {
+    console.error("Error fetching employees:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error while fetching employees.",
+    });
+  }
+};
+
+export const createTask = async (req, res) => {
+  try {
+    const { assignedTo, title, description, deadLine, status } = req.body;
+
+    if (!assignedTo || !title || !deadLine) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Please provide all required fields (assignedTo, title, deadLine).",
+      });
+    }
+
+    const userExists = await userModel.findById(assignedTo);
+    if (!userExists) {
+      return res.status(404).json({
+        success: false,
+        message: "Assigned employee not found.",
+      });
+    }
+
+    const newTask = new taskModel({
+      assignedTo,
+      title,
+      description: description || "",
+      deadLine: new Date(deadLine),
+      status: status || false,
+    });
+
+    const savedTask = await newTask.save();
+
+    await userModel.findByIdAndUpdate(
+      assignedTo,
+      { $push: { tasks: savedTask._id } },
+      { new: true },
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: "Task created and assigned successfully!",
+      data: savedTask,
+    });
+  } catch (error) {
+    console.error("Error creating task:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error while creating task.",
+    });
+  }
+};

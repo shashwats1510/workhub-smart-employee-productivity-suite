@@ -18,13 +18,13 @@ export const createAccount = async (req, res) => {
       });
     }
 
-    const newProductivity = new productivityModel();
-    const prod = await newProductivity.save();
+    // const newProductivity = new productivityModel();
+    // const prod = await newProductivity.save();
 
     // Construct the new user document
     const newUser = new userModel({
       ...userData,
-      productivity: prod._id,
+      // productivity: prod._id,
       password: userData.password,
     });
 

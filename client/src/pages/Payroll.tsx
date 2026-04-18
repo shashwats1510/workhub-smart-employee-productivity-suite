@@ -3,34 +3,51 @@ import {
   Briefcase,
   Wallet,
   TrendingUp,
-  Clock,
   Award,
   Download,
   CalendarDays,
   FileText,
   ChevronDown,
 } from "lucide-react";
+import { useGlobalContext } from "../contexts/GlobalContext";
 
 const Payroll = () => {
-  // Simulating state for month selection
-  const [selectedMonth, setSelectedMonth] = useState("October 2023");
+  const { userData } = useGlobalContext();
 
-  // Dummy payroll data
-  const payrollData = {
-    role: "Senior Full-Stack Engineer",
-    performanceRating: "Exceeds Expectations",
-    baseSalary: 7500.0,
-    hourlyRate: 55.0,
-    overtimeHours: 12,
-    incentives: 1250.0,
-    deductions: 850.0, // Taxes, Benefits, etc.
-  };
+  // Dynamically get the current month and year (e.g., "October 2023")
+  const currentMonthString = new Date().toLocaleString("default", {
+    month: "long",
+    year: "numeric",
+  });
 
-  // Derived calculations
-  const overtimePay = payrollData.hourlyRate * payrollData.overtimeHours;
-  const grossPay =
-    payrollData.baseSalary + overtimePay + payrollData.incentives;
-  const netPay = grossPay - payrollData.deductions;
+  const [selectedMonth, setSelectedMonth] = useState(currentMonthString);
+
+  // Fallback defaults if user data is still loading
+  const baseSalary = userData?.salary || 0;
+  const productivity = userData?.productivity || 0;
+  const roleName = userData?.role || userData?.post || "Employee";
+  const isManager = userData?.post === "Manager";
+
+  // --- Dynamic Calculations ---
+
+  // 1. Determine Performance Tier based on Productivity Score
+  let performanceRating = "Meets Expectations";
+  if (productivity >= 110) performanceRating = "Outstanding";
+  else if (productivity >= 100) performanceRating = "Exceeds Expectations";
+  else if (productivity < 80) performanceRating = "Needs Improvement";
+
+  // 2. Calculate Incentives: Target bonus is 10% of base, scaled by productivity.
+  // Managers do not receive performance incentives/benefits.
+  const incentives = isManager ? 0 : baseSalary * 0.1 * (productivity / 100);
+
+  // 3. Gross Pay
+  const grossPay = baseSalary + incentives;
+
+  // 4. Deductions: 18% Flat Tax on Gross Pay
+  const deductions = grossPay * 0.18;
+
+  // 5. Net Pay
+  const netPay = grossPay - deductions;
 
   // Formatter for currency
   const formatCurrency = (amount: number) => {
@@ -64,19 +81,38 @@ const Payroll = () => {
             </p>
             <div className="flex items-center gap-3 mb-4">
               <Briefcase className="w-5 h-5 text-secondary" />
-              <h2 className="text-xl font-bold text-text-primary">
-                {payrollData.role}
+              <h2 className="text-xl font-bold text-text-primary capitalize">
+                {roleName}
               </h2>
             </div>
 
             <div className="h-px w-full bg-border-subtle my-4"></div>
 
-            <p className="text-text-muted text-sm font-medium uppercase tracking-wider mb-2">
-              Performance Tier
-            </p>
-            <div className="inline-flex items-center gap-2 bg-success-muted/30 border border-success/20 text-success px-3 py-1.5 rounded-lg text-sm font-semibold">
-              <Award className="w-4 h-4" />
-              {payrollData.performanceRating}
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-text-muted text-sm font-medium uppercase tracking-wider mb-2">
+                  Performance Tier
+                </p>
+                <div
+                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold border ${
+                    performanceRating === "Needs Improvement"
+                      ? "bg-error-muted/30 border-error/20 text-error"
+                      : "bg-success-muted/30 border-success/20 text-success"
+                  }`}
+                >
+                  <Award className="w-4 h-4" />
+                  {performanceRating}
+                </div>
+              </div>
+
+              <div className="text-right">
+                <p className="text-text-muted text-sm font-medium uppercase tracking-wider mb-2">
+                  Prod. Score
+                </p>
+                <span className="text-xl font-bold text-primary-400">
+                  {Math.round(productivity)}%
+                </span>
+              </div>
             </div>
           </div>
 
@@ -143,43 +179,26 @@ const Payroll = () => {
                     <span className="text-sm font-medium">Base Salary</span>
                   </div>
                   <span className="text-sm font-semibold">
-                    {formatCurrency(payrollData.baseSalary)}
+                    {formatCurrency(baseSalary)}
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-background-input flex items-center justify-center">
-                      <Clock className="w-4 h-4 text-text-secondary" />
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium block">
-                        Hourly Pay (Overtime)
-                      </span>
-                      <span className="text-xs text-text-muted">
-                        {payrollData.overtimeHours} hrs @{" "}
-                        {formatCurrency(payrollData.hourlyRate)}/hr
+                {/* Only render Incentives if the user is NOT a manager */}
+                {!isManager && (
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-success-muted/20 flex items-center justify-center">
+                        <TrendingUp className="w-4 h-4 text-success" />
+                      </div>
+                      <span className="text-sm font-medium">
+                        Performance Incentives
                       </span>
                     </div>
-                  </div>
-                  <span className="text-sm font-semibold">
-                    {formatCurrency(overtimePay)}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-success-muted/20 flex items-center justify-center">
-                      <TrendingUp className="w-4 h-4 text-success" />
-                    </div>
-                    <span className="text-sm font-medium">
-                      Performance Incentives
+                    <span className="text-sm font-semibold text-success">
+                      +{formatCurrency(incentives)}
                     </span>
                   </div>
-                  <span className="text-sm font-semibold text-success">
-                    +{formatCurrency(payrollData.incentives)}
-                  </span>
-                </div>
+                )}
               </div>
             </div>
 
@@ -195,10 +214,10 @@ const Payroll = () => {
                   <div className="w-8 h-8 rounded-lg bg-error-muted/20 flex items-center justify-center">
                     <TrendingUp className="w-4 h-4 text-error rotate-180" />
                   </div>
-                  <span className="text-sm font-medium">Taxes & Benefits</span>
+                  <span className="text-sm font-medium">Taxes (18%)</span>
                 </div>
                 <span className="text-sm font-semibold text-error">
-                  -{formatCurrency(payrollData.deductions)}
+                  -{formatCurrency(deductions)}
                 </span>
               </div>
             </div>
