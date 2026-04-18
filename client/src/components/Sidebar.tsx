@@ -59,7 +59,7 @@ const Sidebar = () => {
 
   if (userData?.post === "Admin") {
     // Admin only sees Dashboard
-    visibleNavItems = navItems.filter((item) => item.name === "Dashboard");
+    visibleNavItems = navItems.filter((item) => item.name !== "Tasks" && item.name !== "Productivity");
   } else if (userData?.post === "Manager") {
     // Managers see everything EXCEPT Productivity
     visibleNavItems = navItems.filter((item) => item.name !== "Productivity");
