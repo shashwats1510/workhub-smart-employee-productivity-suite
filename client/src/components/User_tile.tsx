@@ -1,19 +1,18 @@
-import { Edit2, Shield, ShieldAlert, Trash2, User } from "lucide-react";
+import {
+  Edit2,
+  Shield,
+  ShieldAlert,
+  Trash2,
+  User,
+  ListTodo,
+} from "lucide-react";
 import type { Account, Post } from "../types";
-
-export function formatUTCDate(utcMilliseconds: number) {
-  const date = new Date(utcMilliseconds);
-
-  const dd = String(date.getUTCDate()).padStart(2, "0");
-  const mm = String(date.getUTCMonth() + 1).padStart(2, "0"); // months are 0-indexed
-  const yyyy = date.getUTCFullYear();
-
-  return `${dd}/${mm}/${yyyy}`;
-}
 
 interface props extends Account {
   handleEditUser: (mode: "create" | "edit", user: string) => void;
-  handleDeleteUser: (id: string) => void;
+  handleDeleteUser?: (id: string) => void;
+  isManager?: boolean;
+  handleViewTasks?: (id: string, name: string) => void;
 }
 
 const User_tile = ({
@@ -22,78 +21,109 @@ const User_tile = ({
   email,
   post,
   role,
-  phone,
+  phoneNo,
   dob,
   status,
   handleEditUser,
   handleDeleteUser,
+  isManager,
+  handleViewTasks,
 }: props) => {
+  
   const getpostBadge = (post: Post) => {
     switch (post) {
       case "Admin":
         return (
-          <span className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md bg-error-muted text-error">
-            <ShieldAlert className="w-3 h-3" /> Admin
+          <span className="flex w-max items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-error-muted/20 text-error border border-error/20">
+            <ShieldAlert className="w-3.5 h-3.5" /> Admin
           </span>
         );
       case "Manager":
         return (
-          <span className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md bg-secondary-active text-white">
-            <Shield className="w-3 h-3" /> Manager
+          <span className="flex w-max items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-secondary/20 text-secondary border border-secondary/20">
+            <Shield className="w-3.5 h-3.5" /> Manager
           </span>
         );
       default:
         return (
-          <span className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md bg-(--color-background-elevated) text-text-secondary">
-            <User className="w-3 h-3" /> Employee
+          <span className="flex w-max items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-background-input text-text-secondary border border-border-strong">
+            <User className="w-3.5 h-3.5" /> Employee
           </span>
         );
     }
   };
 
+  // Generate an avatar initial
+  const initial = name ? name.charAt(0).toUpperCase() : "U";
+
   return (
-    <tr
-      key={_id}
-      className="hover:bg-(--color-background-elevated)/50 transition-colors"
-    >
+    <tr className="group hover:bg-background-input/30 transition-colors duration-200 border-b border-border-subtle last:border-none">
       <td className="px-6 py-4">
-        <div className="font-medium text-text-primary">{name}</div>
-        <div className="text-sm text-text-muted">{email}</div>
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-primary-600/20 border border-primary-500/30 flex items-center justify-center text-primary-400 font-bold shadow-inner">
+            {initial}
+          </div>
+          <div>
+            <div className="font-bold text-text-primary">{name}</div>
+            <div className="text-xs text-text-muted mt-0.5">{email}</div>
+          </div>
+        </div>
       </td>
       <td className="px-6 py-4">{getpostBadge(post)}</td>
-      <td className="px-6 py-4">{role}</td>
-      <td className="px-6 py-4">{phone}</td>
-      <td className="px-6 py-4">{formatUTCDate(dob)}</td>
+      <td className="px-6 py-4">
+        <span className="font-medium text-text-secondary">{role}</span>
+      </td>
+      <td className="px-6 py-4 text-sm text-text-secondary">{phoneNo}</td>
+      <td className="px-6 py-4 text-sm text-text-secondary">
+        {dob ? new Date(dob).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : "N/A"}
+      </td>
       <td className="px-6 py-4">
         <span
-          className={`inline-flex items-center gap-1.5 text-xs font-medium ${status === "Active" ? "text-success" : "text-text-muted"}`}
+          className={`inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider ${
+            status === "Active" ? "text-success" : "text-text-muted"
+          }`}
         >
           <span
-            className={`w-1.5 h-1.5 rounded-full ${status === "Active" ? "bg-success" : "bg-text-disabled"}`}
+            className={`w-2 h-2 rounded-full shadow-sm ${
+              status === "Active" ? "bg-success shadow-success/50" : "bg-text-disabled"
+            }`}
           ></span>
-          {status}
+          {status || "Unknown"}
         </span>
       </td>
       <td className="px-6 py-4 text-right">
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          
+          {/* View Tasks Button */}
+          {isManager && handleViewTasks && (
+            <button
+              className="p-2 rounded-lg text-text-secondary hover:text-primary-400 hover:bg-primary-400/10 transition-all"
+              title="View Tasks"
+              onClick={() => handleViewTasks(_id, name)}
+            >
+              <ListTodo className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Edit Button */}
           <button
-            className="p-2 rounded-md text-text-secondary hover:text-(--color-primary-400) hover:bg-interactive-hover transition-colors"
+            className="p-2 rounded-lg text-text-secondary hover:text-primary-400 hover:bg-primary-400/10 transition-all"
             title="Edit Account"
-            onClick={() => {
-              handleEditUser("edit", _id);
-            }}
+            onClick={() => handleEditUser("edit", _id)}
           >
             <Edit2 className="w-4 h-4" />
           </button>
-          <button
-            className="p-2 rounded-md text-text-secondary hover:text-error hover:bg-error-muted/30 transition-colors"
-            title="Delete Account"
-            onClick={()=> {
-              handleDeleteUser(_id);
-            }}
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+
+          {/* Delete Button */}
+          {!isManager && handleDeleteUser && (
+            <button
+              className="p-2 rounded-lg text-text-secondary hover:text-error hover:bg-error/10 transition-all"
+              title="Delete Account"
+              onClick={() => handleDeleteUser(_id)}
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </td>
     </tr>

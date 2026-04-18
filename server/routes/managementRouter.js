@@ -13,7 +13,7 @@ const router = express.Router();
 
 router.post("/applyforleave", isLoggedIn, applyForLeave);
 router.post("/markAttendance", isLoggedIn, markAttendance);
-router.post("/toggleTask", isLoggedIn, toggleTaskStatus);
+router.put("/toggleTask", isLoggedIn, toggleTaskStatus);
 router.post("/createTask", isLoggedIn, createTask);
 
 router.get("/getUserTasks", isLoggedIn, getUserTasks);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Briefcase,
   Wallet,
@@ -26,6 +26,7 @@ const Payroll = () => {
   const baseSalary = userData?.salary || 0;
   const productivity = userData?.productivity || 0;
   const roleName = userData?.role || userData?.post || "Employee";
+  const isManager = userData?.post === "Manager";
 
   // --- Dynamic Calculations ---
 
@@ -35,8 +36,9 @@ const Payroll = () => {
   else if (productivity >= 100) performanceRating = "Exceeds Expectations";
   else if (productivity < 80) performanceRating = "Needs Improvement";
 
-  // 2. Calculate Incentives: Target bonus is 10% of base, scaled by productivity
-  const incentives = baseSalary * 0.1 * (productivity / 100);
+  // 2. Calculate Incentives: Target bonus is 10% of base, scaled by productivity.
+  // Managers do not receive performance incentives/benefits.
+  const incentives = isManager ? 0 : baseSalary * 0.1 * (productivity / 100);
 
   // 3. Gross Pay
   const grossPay = baseSalary + incentives;
@@ -181,19 +183,22 @@ const Payroll = () => {
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-success-muted/20 flex items-center justify-center">
-                      <TrendingUp className="w-4 h-4 text-success" />
+                {/* Only render Incentives if the user is NOT a manager */}
+                {!isManager && (
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-success-muted/20 flex items-center justify-center">
+                        <TrendingUp className="w-4 h-4 text-success" />
+                      </div>
+                      <span className="text-sm font-medium">
+                        Performance Incentives
+                      </span>
                     </div>
-                    <span className="text-sm font-medium">
-                      Performance Incentives
+                    <span className="text-sm font-semibold text-success">
+                      +{formatCurrency(incentives)}
                     </span>
                   </div>
-                  <span className="text-sm font-semibold text-success">
-                    +{formatCurrency(incentives)}
-                  </span>
-                </div>
+                )}
               </div>
             </div>
 
@@ -237,6 +242,15 @@ const Payroll = () => {
               </span>
             </div>
           </div>
+
+          {/* Action Buttons */}
+          <button
+            type="button"
+            className="w-full flex items-center justify-center gap-2 cursor-pointer rounded-lg py-3 text-sm font-semibold text-white shadow-lg shadow-secondary/20 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 focus:ring-offset-background transition-all bg-secondary hover:bg-secondary-hover hover:scale-[1.02]"
+          >
+            <Download className="w-4 h-4" />
+            Download Payslip (PDF)
+          </button>
         </div>
       </div>
     </div>

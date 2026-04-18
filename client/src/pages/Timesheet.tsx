@@ -86,8 +86,7 @@ const Timesheet = () => {
     if (status === "Working") {
       interval = setInterval(() => setWorkSeconds((prev) => prev + 1), 1000);
     } else if (status === "Break" || status === "Lunch Break") {
-      interval = setInterval(() => setBreakSeconds((prev) => prev + 1), 1000);
-    }
+      interval = setInterval(() => setBreakSeconds((prev) => prev + 1), 1000); }
     return () => clearInterval(interval);
   }, [status]);
 
@@ -192,7 +191,7 @@ const Timesheet = () => {
               Daily Summary
             </h2>
 
-            <div className="space-y-6 flex-grow">
+            <div className="space-y-6 grow">
               <div className="flex justify-between items-center bg-background-input/50 p-4 rounded-xl border border-border-subtle">
                 <span className="text-text-secondary font-medium flex items-center gap-2">
                   <LogIn className="w-4 h-4" /> Punch in:
@@ -238,7 +237,7 @@ const Timesheet = () => {
               Current Status
             </h2>
 
-            <div className="flex-grow space-y-6">
+            <div className="grow space-y-6">
               <div
                 className={`p-4 rounded-xl border text-center flex flex-col items-center justify-center gap-2 transition-all duration-300 ${
                   status === "Working"
@@ -263,7 +262,7 @@ const Timesheet = () => {
                   Update your status:
                 </label>
                 <div className="flex gap-3">
-                  <div className="relative flex-grow">
+                  <div className="relative grow">
                     <select
                       value={selectedStatus}
                       onChange={(e) => setSelectedStatus(e.target.value as WorkStatus)}
