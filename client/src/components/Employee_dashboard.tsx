@@ -31,7 +31,8 @@ const EmployeePanel = () => {
       if (!userData?._id) return;
       try {
         setIsLoadingTasks(true);
-        const res = await axios.get(`/api/management/tasks?id=${userData._id}`);
+        const res = await axios.get(`/api/management/getUserTasks?id=${userData._id}`);
+        console.log(res)
         if (res.data.success) {
           // Filter for tasks that are NOT completed yet
           const incompleteTasks = res.data.data.filter(
