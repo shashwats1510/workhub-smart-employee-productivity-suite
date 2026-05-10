@@ -26,41 +26,62 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
+// export const getUserDetails = async (req, res) => {
+//   try {
+//     const userId = req.query.id;
+//     if (!userId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "User ID is required in query parameters"
+//       });
+//     }
+
+//     const user = await userModel.findById(userId).select("-password");
+//     if (!user) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "User not found"
+//       });
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       data: user
+//     });
+//   } catch (error) {
+//     console.error("Error fetching user details:", error);
+
+//     if (error.kind === "ObjectId") {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid User ID format"
+//       });
+//     }
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Internal Server Error"
+//     });
+//   }
+// };
+
 export const getUserDetails = async (req, res) => {
   try {
     const userId = req.query.id;
-    if (!userId) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "User ID is required in query parameters" 
-      });
-    }
-
     const user = await userModel.findById(userId).select("-password");
-    if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "User not found" 
-      });
-    }
 
-    res.status(200).json({ 
-      success: true, 
-      data: user 
-    });
+    const summary = {
+      takenSick: user.leaves.history.filter(
+        (l) => l.leaveType === "sick" && l.status === "Approved",
+      ).length,
+      takenCasual: user.leaves.history.filter(
+        (l) => l.leaveType === "casual" && l.status === "Approved",
+      ).length,
+      pending: user.leaves.history.filter((l) => l.status === "Pending").length,
+    };
+
+    res.status(200).json({ success: true, data: user, summary });
   } catch (error) {
-    console.error("Error fetching user details:", error);
-    
-    if (error.kind === "ObjectId") {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Invalid User ID format" 
-      });
-    }
-
-    res.status(500).json({ 
-      success: false, 
-      message: "Internal Server Error" 
-    });
+    res.status(500).json({ success: false, message: "Error" });
   }
 };

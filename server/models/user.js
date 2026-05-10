@@ -20,16 +20,24 @@ export const userSchema = new mongoose.Schema({
   },
   salary: { type: Number, required: true, default: 80000.0 },
   leaves: {
-    taken: {
-      type: [
-        {
-          leaveType: { type: String, enum: ["sick", "casual"], required: true },
-          date: { type: Date, required: true },
-          reason: { type: String, required: true },
+    history: [
+      {
+        leaveType: { type: String, enum: ["sick", "casual"], required: true },
+        startDate: { type: Date, required: true },
+        endDate: { type: Date, required: true },
+        duration: { type: Number, required: true },
+        reason: { type: String, required: true },
+        status: {
+          type: String,
+          enum: ["Pending", "Approved", "Declined"],
+          default: "Pending",
         },
-      ],
-      default: [],
-    },
+        appliedAt: { type: Date, default: Date.now },
+        respondedAt: { type: Date },
+        adminNote: { type: String },
+      },
+    ],
+    // Configuration for the year
     sickLeave: {
       total: { type: Number, default: 12 },
       remaining: { type: Number, default: 12 },
@@ -39,8 +47,6 @@ export const userSchema = new mongoose.Schema({
       remaining: { type: Number, default: 10 },
     },
   },
-
-  // --- UPDATED ATTENDANCE SCHEMA ---
   attendance: {
     type: [
       {
@@ -67,7 +73,7 @@ export const userSchema = new mongoose.Schema({
   },
 });
 
-userSchema.pre("save", async function (next) {
+userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
 
   try {

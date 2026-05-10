@@ -4,7 +4,6 @@ import {
   Wallet,
   TrendingUp,
   Award,
-  Download,
   CalendarDays,
   FileText,
   ChevronDown,
@@ -53,7 +52,7 @@ const Payroll = () => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD",
+      currency: "INR",
     }).format(amount);
   };
 
@@ -242,15 +241,6 @@ const Payroll = () => {
               </span>
             </div>
           </div>
-
-          {/* Action Buttons */}
-          <button
-            type="button"
-            className="w-full flex items-center justify-center gap-2 cursor-pointer rounded-lg py-3 text-sm font-semibold text-white shadow-lg shadow-secondary/20 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 focus:ring-offset-background transition-all bg-secondary hover:bg-secondary-hover hover:scale-[1.02]"
-          >
-            <Download className="w-4 h-4" />
-            Download Payslip (PDF)
-          </button>
         </div>
       </div>
     </div>

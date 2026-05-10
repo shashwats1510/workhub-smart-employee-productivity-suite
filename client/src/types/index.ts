@@ -1,5 +1,18 @@
 export type Post = "Admin" | "Manager" | "Employee";
 
+export interface LeaveHistoryItem {
+  _id?: string;
+  leaveType: "sick" | "casual";
+  startDate: string;
+  endDate: string;
+  duration: number;
+  reason: string;
+  status: "Pending" | "Approved" | "Declined";
+  appliedAt: string;
+  respondedAt?: string;
+  adminNote?: string;
+}
+
 export interface Account {
   _id: string;
   email: string;
@@ -8,10 +21,7 @@ export interface Account {
   post: Post;
   salary: number;
   leaves: {
-    taken: {
-      leaveType: "sick" | "casual";
-      date: string;
-    }[];
+    history: LeaveHistoryItem[];
     sickLeave: {
       total: number;
       remaining: number;

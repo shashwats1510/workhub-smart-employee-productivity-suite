@@ -5,83 +5,71 @@ export const applyForLeave = async (req, res) => {
   try {
     const { userId, leaveType, startDate, endDate, reason } = req.body;
 
-    // 1. Basic Validation
-    if (!userId || !leaveType || !startDate || !endDate) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing required fields",
-      });
-    }
-
-    const normalizedType = leaveType.split(" ")[0].toLowerCase();
-    if (!["sick", "casual"].includes(normalizedType)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid leave type",
-      });
-    }
-
     const start = new Date(startDate);
     const end = new Date(endDate);
-
-    if (start > end) {
-      return res.status(400).json({
-        success: false,
-        message: "Start date cannot be after end date",
-      });
-    }
-
-    // Calculate difference in days (+1 to make it inclusive)
-    const diffTime = Math.abs(end - start);
-    const requestedDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    const requestedDays =
+      Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24)) + 1;
 
     const user = await userModel.findById(userId);
-    if (!user) {
+
+    // Logic to calculate pending days remains similar,
+    // but sum the 'duration' of all pending items in history
+    const alreadyPending = user.leaves.history
+      .filter(
+        (l) =>
+          l.status === "Pending" &&
+          l.leaveType === leaveType.split(" ")[0].toLowerCase(),
+      )
+      .reduce((acc, curr) => acc + curr.duration, 0);
+
+    const balanceKey = leaveType.includes("sick") ? "sickLeave" : "casualLeave";
+    if (user.leaves[balanceKey].remaining - alreadyPending < requestedDays) {
       return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+        .status(400)
+        .json({ success: false, message: "Insufficient balance" });
     }
 
-    const targetLeave = normalizedType === "sick" ? "sickLeave" : "casualLeave";
-
-    if (user.leaves[targetLeave].remaining < requestedDays) {
-      return res.status(400).json({
-        success: false,
-        message: `Insufficient balance. You requested ${requestedDays} days, but only have ${user.leaves[targetLeave].remaining} ${normalizedType} days left.`,
-      });
-    }
-
-    user.leaves[targetLeave].remaining -= requestedDays;
-
-    // Generate entries for the 'taken' array for each day of the leave
-    let currentDate = new Date(start);
-    while (currentDate <= end) {
-      user.leaves.taken.push({
-        leaveType: normalizedType,
-        date: new Date(currentDate),
-        reason: reason,
-      });
-      currentDate.setDate(currentDate.getDate() + 1); // Move to the next day
-    }
-
-    // Save the updated user document
-    await user.save();
-
-    return res.status(200).json({
-      success: true,
-      message: "Leave applied successfully!",
-      data: {
-        balances: {
-          sick: user.leaves.sickLeave,
-          casual: user.leaves.casualLeave,
-        },
-      },
+    // PUSH ONLY ONE ENTRY
+    user.leaves.history.push({
+      leaveType: leaveType.split(" ")[0].toLowerCase(),
+      startDate: start,
+      endDate: end,
+      duration: requestedDays,
+      reason: reason,
+      status: "Pending",
     });
-  } catch (error) {
-    console.error("Error applying for leave:", error);
+
+    await user.save();
     return res
-      .status(500)
-      .json({ success: false, message: "Internal server error" });
+      .status(200)
+      .json({ success: true, message: "Leave applied successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const handleLeaveAction = async (req, res) => {
+  try {
+    const { userId, leaveId, action, adminNote } = req.body;
+    const user = await userModel.findById(userId);
+    const leaveRequest = user.leaves.history.id(leaveId);
+
+    if (action === "Approved") {
+      const balanceKey =
+        leaveRequest.leaveType === "sick" ? "sickLeave" : "casualLeave";
+      // Subtract the whole duration at once
+      user.leaves[balanceKey].remaining -= leaveRequest.duration;
+      leaveRequest.status = "Approved";
+    } else {
+      leaveRequest.status = "Declined";
+    }
+
+    leaveRequest.respondedAt = new Date();
+    leaveRequest.adminNote = adminNote;
+    await user.save();
+    res.status(200).json({ success: true, message: `Leave ${action}` });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Error processing leave" });
   }
 };
 
@@ -293,22 +281,23 @@ export const createTask = async (req, res) => {
 export const editUserDetails = async (req, res) => {
   try {
     // Extract everything that MIGHT be sent by either the Admin or Manager panels
-    const { id, name, email, post, role, salary, phoneNo, dob, password } = req.body;
+    const { id, name, email, post, role, salary, phoneNo, dob, password } =
+      req.body;
 
     // 1. Basic validation
     if (!id) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "User ID is required to perform an update." 
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required to perform an update.",
       });
     }
 
     // 2. Fetch the user document
     const user = await userModel.findById(id);
     if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "User not found in the database." 
+      return res.status(404).json({
+        success: false,
+        message: "User not found in the database.",
       });
     }
 
@@ -339,23 +328,22 @@ export const editUserDetails = async (req, res) => {
         _id: user._id,
         name: user.name,
         role: user.role,
-        post: user.post
-      }
+        post: user.post,
+      },
     });
-
   } catch (error) {
     // Handle duplicate email errors (MongoDB error code 11000)
     if (error.code === 11000) {
       return res.status(400).json({
         success: false,
-        message: "That email is already in use by another account."
+        message: "That email is already in use by another account.",
       });
     }
 
     console.error("Error editing user details:", error);
-    return res.status(500).json({ 
-      success: false, 
-      message: "Internal server error while updating user details." 
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error while updating user details.",
     });
   }
 };

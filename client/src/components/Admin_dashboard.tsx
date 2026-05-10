@@ -208,7 +208,6 @@ const AdminPanel = () => {
                   <th className="px-6 py-4">Job Role</th>
                   <th className="px-6 py-4">Phone No.</th>
                   <th className="px-6 py-4">Date of Birth</th>
-                  <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>

@@ -1,12 +1,23 @@
 import { useEffect, useState } from "react";
-import { Search, X, ListTodo, Users, CheckCircle2, Circle, CalendarDays } from "lucide-react";
+import {
+  Search,
+  X,
+  ListTodo,
+  Users,
+  CheckCircle2,
+  Circle,
+  CalendarDays,
+  Clock,
+  Check,
+  Ban,
+  Edit2,
+} from "lucide-react";
 import { Slide, toast } from "react-toastify";
 import axios from "axios";
 
 import type { Account } from "../types";
 import User_tile from "./User_tile";
 
-// Define the Task interface based on your schema
 interface Task {
   _id: string;
   title: string;
@@ -29,7 +40,7 @@ const ManagerPanel = () => {
   const [viewingUserTasks, setViewingUserTasks] = useState<Task[]>([]);
   const [isLoadingTasks, setIsLoadingTasks] = useState(false);
 
-  // Manager Edit Form State (Strictly limited fields)
+  // Manager Edit Form State
   const [formData, setFormData] = useState({
     name: "",
     role: "",
@@ -38,18 +49,28 @@ const ManagerPanel = () => {
     dob: "",
   });
 
+  // --- Data Fetching ---
+
+  const refreshData = async () => {
+    try {
+      const res = await axios.get("/api/info/getAllUsers");
+      if (res.status === 200) {
+        setUsers(res.data.data);
+      }
+    } catch (err) {
+      console.error("Failed to refresh users:", err);
+    }
+  };
+
+  useEffect(() => {
+    refreshData();
+  }, []);
+
   // --- Handlers ---
 
   const handleCloseEditModal = () => {
     setIsEditModalOpen(false);
     setSelectedUserId(null);
-    setFormData({
-      name: "",
-      role: "",
-      salary: 0,
-      phoneNo: "",
-      dob: "",
-    });
   };
 
   const handleOpenEditModal = async (
@@ -61,18 +82,12 @@ const ManagerPanel = () => {
       const res = await axios.get(`/api/info/getUserDetails?id=${userId}`);
       if (res.status === 200) {
         const user = res.data.data;
-
-        let formattedDate = "";
-        if (user?.dob) {
-          formattedDate = new Date(user.dob).toISOString().split("T")[0];
-        }
-
         setFormData({
           name: user?.name || "",
           role: user?.role || "",
           salary: user?.salary || 0,
           phoneNo: user?.phoneNo || "",
-          dob: formattedDate,
+          dob: user?.dob ? new Date(user.dob).toISOString().split("T")[0] : "",
         });
       }
     } catch (err) {
@@ -84,56 +99,72 @@ const ManagerPanel = () => {
   const handleEditUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      toast.promise(
+      await toast.promise(
         axios.post("/api/management/editUserDetails", {
           ...formData,
           id: selectedUserId,
         }),
         {
-          pending: "Updating Employee Details...",
-          success: "Details successfully updated!",
-          error: "Failed to update details.",
+          pending: "Updating details...",
+          success: "User updated successfully!",
+          error: "Update failed.",
         },
-        {
-          autoClose: 3000,
-          theme: "dark",
-          transition: Slide,
-        },
+        { theme: "dark", transition: Slide },
       );
       handleCloseEditModal();
-      getAllUsers().then((res) => {
-        if (res.status === 200) setUsers(res.data.data);
-      });
+      refreshData();
     } catch (error) {
-      console.error("Validation or Server Error");
+      console.error("Error updating user:", error);
     }
   };
 
-  // Fetch tasks specifically for the selected user
   const handleViewTasks = async (id: string, name: string) => {
     setViewingUser({ id, name });
-    setViewingUserTasks([]); // Clear out previous data just in case
     setIsTasksModalOpen(true);
     setIsLoadingTasks(true);
-
     try {
       const res = await axios.get(`/api/management/getUserTasks?id=${id}`);
       if (res.data.success) {
         setViewingUserTasks(res.data.data);
-      } else {
-        toast.error("Failed to load tasks.");
       }
     } catch (error) {
-      console.error("Error fetching tasks:", error);
-      toast.error("An error occurred while fetching tasks.");
+      toast.error("Failed to load tasks.");
     } finally {
       setIsLoadingTasks(false);
     }
   };
 
-  const getAllUsers = async () => {
-    return axios.get("/api/info/getAllUsers");
+  const handleLeaveAction = async (
+    userId: string,
+    leaveId: string,
+    action: "Approved" | "Declined",
+  ) => {
+    try {
+      const res = await axios.post("/api/management/handleLeaveAction", {
+        userId,
+        leaveId,
+        action,
+        adminNote: action === "Declined" ? "Declined by Manager" : "Approved",
+      });
+
+      if (res.data.success) {
+        toast.success(`Leave request ${action.toLowerCase()}!`, {
+          theme: "dark",
+        });
+        refreshData();
+      }
+    } catch (error) {
+      toast.error("Failed to process leave request");
+    }
   };
+
+  // --- Derived State ---
+
+  const allPendingLeaves = users.flatMap((user) =>
+    (user.leaves?.history || [])
+      .filter((leave) => leave.status === "Pending")
+      .map((leave) => ({ ...leave, userName: user.name, userId: user._id })),
+  );
 
   const filteredUsers = users.filter(
     (u) =>
@@ -141,60 +172,123 @@ const ManagerPanel = () => {
       u.email.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  useEffect(() => {
-    getAllUsers().then((res) => {
-      if (res.status === 200) setUsers(res.data.data);
-    });
-  }, []);
-
   return (
     <div className="flex flex-col h-full relative bg-background text-text-primary font-sans overflow-hidden rounded-xl">
-      {/* Ambient Background Gradient */}
       <div className="absolute pointer-events-none inset-0 bg-[radial-gradient(circle_at_top,rgba(70,2,125,0.2)_0%,transparent_70%)]"></div>
 
-      <main className="flex-1 flex flex-col overflow-hidden relative z-10">
-        {/* Header */}
-        <header className="shrink-0 flex items-center justify-between p-8 pb-4">
+      <main className="flex-1 flex flex-col overflow-auto relative z-10 p-8 space-y-10">
+        {/* Dashboard Header */}
+        <header className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-primary-600/20 flex items-center justify-center border border-primary-500/30">
               <Users className="w-6 h-6 text-primary-400" />
             </div>
             <div>
-              <h1 className="text-3xl text-left font-extrabold tracking-tight">Team Roster</h1>
+              <h1 className="text-3xl font-extrabold tracking-tight">
+                Manager Dashboard
+              </h1>
               <p className="text-sm text-text-muted mt-1">
-                Manage your employees, track tasks, and update roles.
+                Review team requests and manage employee performance.
               </p>
             </div>
           </div>
         </header>
 
-        {/* Content Area */}
-        <div className="flex-1 overflow-auto p-8 pt-4">
-          {/* Search Bar */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative flex-1 max-w-md">
+        {/* --- PENDING LEAVE REQUESTS SECTION --- */}
+        {allPendingLeaves.length > 0 && (
+          <section className="animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="flex items-center gap-2 mb-4 text-warning">
+              <Clock className="w-5 h-5 animate-pulse" />
+              <h2 className="text-lg font-bold tracking-tight">
+                Pending Approvals ({allPendingLeaves.length})
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {allPendingLeaves.map((leave, idx) => (
+                <div
+                  key={leave._id || idx}
+                  className="bg-surface-elevated border border-warning/30 rounded-xl p-5 shadow-lg flex flex-col justify-between transition-all hover:border-warning/50"
+                >
+                  <div>
+                    <div className="flex justify-between items-start">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-warning bg-warning/10 px-2 py-1 rounded">
+                        {leave.leaveType}
+                      </span>
+                      <span className="text-[10px] text-text-muted">
+                        Applied:{" "}
+                        {new Date(leave.appliedAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <h3 className="font-bold mt-3 text-lg">{leave.userName}</h3>
+                    <p className="text-xs text-text-secondary mt-2 line-clamp-2 italic">
+                      "{leave.reason}"
+                    </p>
+
+                    {/* Date Range & Duration */}
+                    <div className="mt-4 flex flex-col gap-1">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-text-primary">
+                        <CalendarDays className="w-4 h-4 text-primary-400" />
+                        <span>
+                          {new Date(leave.startDate).toLocaleDateString()} -{" "}
+                          {new Date(leave.endDate).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="ml-6 text-xs font-bold text-primary-400">
+                        Total: {leave.duration}{" "}
+                        {leave.duration === 1 ? "Day" : "Days"}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      onClick={() =>
+                        handleLeaveAction(leave.userId, leave._id!, "Approved")
+                      }
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-success/20 hover:bg-success/30 text-success text-xs font-bold py-2.5 rounded-lg transition-all cursor-pointer"
+                    >
+                      <Check className="w-3.5 h-3.5" /> Approve
+                    </button>
+                    <button
+                      onClick={() =>
+                        handleLeaveAction(leave.userId, leave._id!, "Declined")
+                      }
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-error/20 hover:bg-error/30 text-error text-xs font-bold py-2.5 rounded-lg transition-all cursor-pointer"
+                    >
+                      <Ban className="w-3.5 h-3.5" /> Decline
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* --- TEAM ROSTER SECTION --- */}
+        <section className="space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <h2 className="text-lg font-bold">Team Roster</h2>
+            <div className="relative w-full max-w-md">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
               <input
                 type="text"
                 placeholder="Search by name or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-xl border border-border-strong bg-surface/50 backdrop-blur-sm pl-10 pr-4 py-3 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all shadow-sm"
+                className="w-full rounded-xl border border-border-strong bg-surface/50 backdrop-blur-sm pl-10 pr-4 py-3 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all shadow-sm"
               />
             </div>
           </div>
 
-          {/* Users Table Card */}
           <div className="rounded-2xl border border-border-strong bg-surface-elevated shadow-xl overflow-hidden">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-background-input/50 border-b border-border-strong text-text-muted text-xs uppercase tracking-wider font-bold">
-                  <th className="px-6 py-4">Employee Details</th>
-                  <th className="px-6 py-4">Permission Level</th>
+                <tr className="bg-background-input/50 border-b border-border-strong text-text-muted text-[10px] uppercase tracking-widest font-black">
+                  <th className="px-6 py-4">Employee</th>
+                  <th className="px-6 py-4">Permission</th>
                   <th className="px-6 py-4">Job Role</th>
                   <th className="px-6 py-4">Phone No.</th>
-                  <th className="px-6 py-4">Date of Birth</th>
-                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4">Date Of Birth</th>
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -210,7 +304,10 @@ const ManagerPanel = () => {
                 ))}
                 {filteredUsers.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-6 py-16 text-center text-text-muted font-medium bg-surface">
+                    <td
+                      colSpan={5}
+                      className="px-6 py-16 text-center text-text-muted font-medium bg-surface"
+                    >
                       No team members found matching your search.
                     </td>
                   </tr>
@@ -218,12 +315,10 @@ const ManagerPanel = () => {
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
       </main>
 
-      {/* --------------------------- */}
-      {/* EDIT MODAL (Manager Scoped) */}
-      {/* --------------------------- */}
+      {/* --- EDIT EMPLOYEE MODAL --- */}
       <dialog open={isEditModalOpen}>
         <div className="fixed inset-0 z-50 p-4 bg-black/60 backdrop-blur-sm flex items-center justify-center">
           <div className="bg-surface-elevated border border-border-strong rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
@@ -250,11 +345,12 @@ const ManagerPanel = () => {
                     type="text"
                     required
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                     className="w-full rounded-xl border border-border-strong bg-background-input px-4 py-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
                   />
                 </div>
-
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-text-muted uppercase tracking-wider">
                     Job Role
@@ -263,11 +359,12 @@ const ManagerPanel = () => {
                     type="text"
                     required
                     value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, role: e.target.value })
+                    }
                     className="w-full rounded-xl border border-border-strong bg-background-input px-4 py-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
                   />
                 </div>
-
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-text-muted uppercase tracking-wider">
                     Date of Birth
@@ -276,11 +373,12 @@ const ManagerPanel = () => {
                     type="date"
                     required
                     value={formData.dob}
-                    onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, dob: e.target.value })
+                    }
                     className="w-full rounded-xl border border-border-strong bg-background-input px-4 py-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all [&::-webkit-calendar-picker-indicator]:invert-[0.8]"
                   />
                 </div>
-
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-text-muted uppercase tracking-wider">
                     Phone No.
@@ -289,12 +387,13 @@ const ManagerPanel = () => {
                     type="text"
                     required
                     value={formData.phoneNo}
-                    onChange={(e) => setFormData({ ...formData, phoneNo: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, phoneNo: e.target.value })
+                    }
                     className="w-full rounded-xl border border-border-strong bg-background-input px-4 py-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
                   />
                 </div>
               </div>
-
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-text-muted uppercase tracking-wider">
                   Base Salary ($)
@@ -303,7 +402,9 @@ const ManagerPanel = () => {
                   type="number"
                   required
                   value={formData.salary}
-                  onChange={(e) => setFormData({ ...formData, salary: Number(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, salary: Number(e.target.value) })
+                  }
                   className="w-full rounded-xl border border-border-strong bg-background-input px-4 py-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
                 />
               </div>
@@ -328,24 +429,18 @@ const ManagerPanel = () => {
         </div>
       </dialog>
 
-      {/* --------------------------- */}
-      {/* VIEW TASKS MODAL            */}
-      {/* --------------------------- */}
+      {/* --- VIEW TASKS MODAL --- */}
       <dialog open={isTasksModalOpen}>
         <div className="fixed inset-0 z-50 p-4 bg-black/60 backdrop-blur-sm flex items-center justify-center">
           <div className="bg-surface-elevated border border-border-strong rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
-            {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-border-subtle bg-background-input/30">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-primary-600/20 rounded-lg border border-primary-500/30">
                   <ListTodo className="w-5 h-5 text-primary-400" />
                 </div>
-                <div>
-                  <h2 className="text-xl font-extrabold text-text-primary leading-tight">
-                    {viewingUser.name}'s Tasks
-                  </h2>
-                  <p className="text-xs text-text-muted mt-0.5">Assigned workloads and progress</p>
-                </div>
+                <h2 className="text-xl font-extrabold text-text-primary">
+                  {viewingUser.name}'s Tasks
+                </h2>
               </div>
               <button
                 type="button"
@@ -355,9 +450,8 @@ const ManagerPanel = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
-            {/* Modal Body / Task List */}
-            <div className="bg-surface max-h-125 overflow-y-auto custom-scrollbar p-6">
+
+            <div className="bg-surface max-h-125 overflow-y-auto p-6">
               {isLoadingTasks ? (
                 <div className="flex flex-col items-center justify-center py-12 text-text-muted">
                   <ListTodo className="w-10 h-10 mb-4 opacity-50 animate-pulse" />
@@ -366,54 +460,40 @@ const ManagerPanel = () => {
               ) : viewingUserTasks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-text-muted">
                   <CheckCircle2 className="w-12 h-12 mb-4 text-success/50" />
-                  <p className="font-medium text-text-secondary">No tasks assigned.</p>
-                  <p className="text-sm mt-1">This user's board is totally clear.</p>
+                  <p className="font-medium text-text-secondary">
+                    No tasks assigned.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {viewingUserTasks.map((task) => (
-                    <div 
-                      key={task._id} 
-                      className={`flex items-start gap-4 p-4 rounded-xl border transition-all ${
-                        task.status 
-                          ? "bg-surface/40 border-border-subtle opacity-70" 
-                          : "bg-background-input/50 border-border-strong hover:border-primary-500/30"
-                      }`}
+                    <div
+                      key={task._id}
+                      className="flex items-center justify-between p-4 bg-background-input/50 border border-border-strong rounded-xl"
                     >
-                      <div className="mt-0.5 shrink-0">
+                      <div className="flex items-center gap-3">
                         {task.status ? (
                           <CheckCircle2 className="w-5 h-5 text-success" />
                         ) : (
                           <Circle className="w-5 h-5 text-text-muted" />
                         )}
-                      </div>
-                      
-                      <div className="flex-1">
-                        <p className={`text-sm font-medium ${task.status ? "text-text-muted line-through" : "text-text-primary"}`}>
+                        <span
+                          className={
+                            task.status
+                              ? "line-through text-text-muted"
+                              : "font-medium"
+                          }
+                        >
                           {task.title}
-                        </p>
-                        
-                        {task.deadLine && (
-                          <div className="flex items-center gap-1.5 mt-2">
-                            <CalendarDays className="w-3.5 h-3.5 text-text-muted" />
-                            <span className={`text-xs font-medium ${
-                              !task.status && new Date(task.deadLine) < new Date() 
-                                ? "text-error" 
-                                : "text-text-secondary"
-                            }`}>
-                              Due: {new Date(task.deadLine).toLocaleDateString(undefined, { 
-                                month: 'short', day: 'numeric', year: 'numeric' 
-                              })}
-                            </span>
-                          </div>
-                        )}
+                        </span>
                       </div>
-                      
-                      <span className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md border ${
-                        task.status 
-                          ? "bg-success/10 text-success border-success/20" 
-                          : "bg-warning/10 text-warning border-warning/20"
-                      }`}>
+                      <span
+                        className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md border ${
+                          task.status
+                            ? "bg-success/10 text-success border-success/20"
+                            : "bg-warning/10 text-warning border-warning/20"
+                        }`}
+                      >
                         {task.status ? "Done" : "Pending"}
                       </span>
                     </div>
@@ -421,7 +501,6 @@ const ManagerPanel = () => {
                 </div>
               )}
             </div>
-            
           </div>
         </div>
       </dialog>

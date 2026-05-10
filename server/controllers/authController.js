@@ -164,8 +164,8 @@ export const deleteUser = async (req, res) => {
       });
     }
 
-    if (deletedUser.productivity)
-      await productivityModel.findByIdAndDelete(deletedUser.productivity);
+    // if (deletedUser.productivity)
+    //   await productivityModel.findByIdAndDelete(deletedUser.productivity);
 
     res.status(200).json({
       success: true,

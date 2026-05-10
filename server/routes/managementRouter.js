@@ -6,13 +6,15 @@ import {
   markAttendance,
   toggleTaskStatus,
   createTask,
-  editUserDetails
+  editUserDetails,
+  handleLeaveAction,
 } from "../controllers/managementController.js";
 import { isLoggedIn } from "../middlewares/authValidator.js";
 
 const router = express.Router();
 
 router.post("/applyforleave", isLoggedIn, applyForLeave);
+router.post("/handleLeaveAction", isLoggedIn, handleLeaveAction);
 router.post("/markAttendance", isLoggedIn, markAttendance);
 router.put("/toggleTask", isLoggedIn, toggleTaskStatus);
 router.post("/createTask", isLoggedIn, createTask);

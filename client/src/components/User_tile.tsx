@@ -77,20 +77,7 @@ const User_tile = ({
       <td className="px-6 py-4 text-sm text-text-secondary">
         {dob ? new Date(dob).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : "N/A"}
       </td>
-      <td className="px-6 py-4">
-        <span
-          className={`inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider ${
-            status === "Active" ? "text-success" : "text-text-muted"
-          }`}
-        >
-          <span
-            className={`w-2 h-2 rounded-full shadow-sm ${
-              status === "Active" ? "bg-success shadow-success/50" : "bg-text-disabled"
-            }`}
-          ></span>
-          {status || "Unknown"}
-        </span>
-      </td>
+      
       <td className="px-6 py-4 text-right">
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           

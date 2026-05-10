@@ -1,46 +1,59 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import {
-  CalendarDays,
   HeartPulse,
   Coffee,
-  FileText,
   Send,
   CheckCircle2,
   Briefcase,
+  Clock,
+  XCircle,
+  Calendar,
 } from "lucide-react";
 import { useGlobalContext } from "../contexts/GlobalContext";
 
-const Leave = () => {
-  const { userData } = useGlobalContext();
+const today = new Date().toISOString().split("T")[0];
 
-  // State for the leave application form
+const Leave = () => {
+  const { userData, setUserData } = useGlobalContext();
+
   const [leaveType, setLeaveType] = useState("casual leave");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [reason, setReason] = useState("");
 
-  // Form submission state
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Default values while loading
-  const [balances, setBalances] = useState({
-    sick: { total: 0, remaining: 0 },
-    casual: { total: 0, remaining: 0 },
+  const [leaveStats, setLeaveStats] = useState({
+    sick: { total: 0, remaining: 0, pending: 0 },
+    casual: { total: 0, remaining: 0, pending: 0 },
   });
 
   useEffect(() => {
-    if (userData && userData.leaves) {
-      setBalances({
+    if (userData?.leaves) {
+      const history = userData.leaves.history || [];
+
+      // Calculate pending days based on the 'duration' field in history
+      const pendingSick = history
+        .filter((l: any) => l.leaveType === "sick" && l.status === "Pending")
+        .reduce((acc: number, curr: any) => acc + curr.duration, 0);
+
+      const pendingCasual = history
+        .filter((l: any) => l.leaveType === "casual" && l.status === "Pending")
+        .reduce((acc: number, curr: any) => acc + curr.duration, 0);
+
+      setLeaveStats({
         sick: {
-          total: Number(userData.leaves.sickLeave?.total) || 10,
-          remaining: Number(userData.leaves.sickLeave?.remaining) || 4,
+          total: Number(userData.leaves.sickLeave?.total) || 0,
+          remaining: Number(userData.leaves.sickLeave?.remaining) || 0,
+          pending: pendingSick,
         },
         casual: {
-          total: Number(userData.leaves.casualLeave?.total) || 12,
-          remaining: Number(userData.leaves.casualLeave?.remaining) || 9,
+          total: Number(userData.leaves.casualLeave?.total) || 0,
+          remaining: Number(userData.leaves.casualLeave?.remaining) || 0,
+          pending: pendingCasual,
         },
       });
     }
@@ -49,16 +62,10 @@ const Leave = () => {
   const handleApplyLeave = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
-
-    if (!userData?._id) {
-      setErrorMessage("User session not found. Please log in again.");
-      return;
-    }
+    if (!userData?._id) return setErrorMessage("User session not found.");
 
     setIsLoading(true);
-
     try {
-      // Assuming your proxy is set up to route /api to your backend
       const response = await axios.post("/api/management/applyforleave", {
         userId: userData._id,
         leaveType,
@@ -69,244 +76,227 @@ const Leave = () => {
 
       if (response.data.success) {
         setShowSuccess(true);
-
-        // Update the local balances directly from the backend response
-        const newBalances = response.data.data.balances;
-        setBalances({
-          sick: {
-            total: newBalances.sick.total,
-            remaining: newBalances.sick.remaining,
-          },
-          casual: {
-            total: newBalances.casual.total,
-            remaining: newBalances.casual.remaining,
-          },
-        });
-
-        // Reset form
         setStartDate("");
         setEndDate("");
         setReason("");
 
-        // Hide success message after 3 seconds
+        const userRes = await axios.get(`/api/management/getuserdetails?id=${userData._id}`);
+        if (userRes.data.success) setUserData(userRes.data.data);
+
         setTimeout(() => setShowSuccess(false), 3000);
       }
     } catch (error: any) {
-      console.error("Error applying for leave:", error);
-      // Extract the error message from the backend if it exists
-      setErrorMessage(
-        error.response?.data?.message ||
-          "Failed to apply for leave. Please try again.",
-      );
+      setErrorMessage(error.response?.data?.message || "Failed to apply.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <div className="flex gap-12 relative bg-background text-text-primary font-sans rounded-lg overflow-hidden">
-      {/* Background Ambient Gradient */}
-      <div className="absolute pointer-events-none inset-0 bg-[radial-gradient(circle_at_top,rgba(70,2,125,0.25)_0%,transparent_70%)]"></div>
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case "Approved": return "bg-success/10 text-success border-success/20";
+      case "Declined": return "bg-error/10 text-error border-error/20";
+      default: return "bg-warning/10 text-warning border-warning/20";
+    }
+  };
 
-      {/* Left Panel - Leave Balances (The "Stacks") */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-[#1F242F77] items-center justify-center p-12 rounded-lg">
-        <div className="relative z-10 w-full max-w-lg">
-          <div className="flex items-center gap-3 mb-10">
-            <Briefcase className="w-8 h-8 text-primary-400" />
-            <h1 className="text-4xl font-extrabold tracking-tight">
-              Leave Balance
-            </h1>
+  return (
+    <div className="space-y-8 p-4 font-sans text-text-primary">
+      <div className="flex flex-col lg:flex-row gap-8 relative bg-background rounded-lg overflow-hidden">
+        <div className="absolute pointer-events-none inset-0 bg-[radial-gradient(circle_at_top,rgba(70,2,125,0.25)_0%,transparent_70%)]"></div>
+
+        {/* Left Panel - Visual Stacks */}
+        <div className="lg:w-1/2 relative bg-[#1F242F77] rounded-lg p-8 flex flex-col items-center">
+          <div className="w-full max-w-lg mb-8">
+            <div className="flex items-center gap-3 mb-4">
+              <Briefcase className="w-8 h-8 text-primary-400" />
+              <h1 className="text-3xl font-extrabold">Leave Balance</h1>
+            </div>
+            <p className="text-text-secondary text-sm">
+              Gray area represents <b>Pending</b> days. Colored area is your <b>Remaining</b> usable balance.
+            </p>
           </div>
 
-          <p className="text-text-secondary text-lg mb-12">
-            Monitor your available time off. Your leave stacks drain as you
-            utilize your days throughout the year.
-          </p>
-
-          <div className="flex gap-12 justify-center items-end h-100">
+          <div className="flex gap-12 items-end">
             {/* Sick Leave Stack */}
             <div className="flex flex-col items-center gap-4 w-32">
-              <div className="h-72 w-full bg-background-input border-2 border-border-strong rounded-2xl relative overflow-hidden flex flex-col justify-end shadow-lg shadow-black/20">
-                {/* Draining Fill Area */}
+              <div className="h-64 w-full bg-background-input border-2 border-border-strong rounded-2xl relative overflow-hidden flex flex-col justify-end shadow-lg">
                 <div
-                  className="bg-secondary w-full transition-all duration-1000 ease-in-out relative flex items-start justify-center pt-4"
-                  style={{
-                    height: `${balances.sick.total > 0 ? (balances.sick.remaining / balances.sick.total) * 100 : 0}%`,
-                  }}
+                  className="bg-text-muted/30 w-full transition-all duration-700"
+                  style={{ height: `${(leaveStats.sick.pending / leaveStats.sick.total) * 100}%` }}
+                />
+                <div
+                  className="bg-secondary w-full transition-all duration-1000 flex items-start justify-center pt-2"
+                  style={{ height: `${(leaveStats.sick.remaining / leaveStats.sick.total) * 100}%` }}
                 >
-                  <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.1)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.1)_50%,rgba(255,255,255,0.1)_75%,transparent_75%,transparent)] bg-size-[1rem_1rem]"></div>
-                  <span className="relative z-10 font-bold text-white text-xl drop-shadow-md">
-                    {balances.sick.remaining}
-                  </span>
+                  <span className="font-bold text-white">{leaveStats.sick.remaining}</span>
                 </div>
               </div>
               <div className="text-center">
-                <div className="flex items-center justify-center gap-2 text-text-primary font-semibold">
-                  <HeartPulse className="w-4 h-4 text-secondary" />
-                  Sick Leave
-                </div>
-                <p className="text-sm text-text-muted mt-1">
-                  {balances.sick.total} Total Days
-                </p>
+                <span className="text-sm font-semibold flex items-center gap-1 justify-center">
+                  <HeartPulse className="w-4 h-4 text-secondary" /> Sick
+                </span>
               </div>
             </div>
 
             {/* Casual Leave Stack */}
             <div className="flex flex-col items-center gap-4 w-32">
-              <div className="h-72 w-full bg-background-input border-2 border-border-strong rounded-2xl relative overflow-hidden flex flex-col justify-end shadow-lg shadow-black/20">
-                {/* Draining Fill Area */}
+              <div className="h-64 w-full bg-background-input border-2 border-border-strong rounded-2xl relative overflow-hidden flex flex-col justify-end shadow-lg">
                 <div
-                  className="bg-primary-500 w-full transition-all duration-1000 ease-in-out relative flex items-start justify-center pt-4"
-                  style={{
-                    height: `${balances.casual.total > 0 ? (balances.casual.remaining / balances.casual.total) * 100 : 0}%`,
-                  }}
+                  className="bg-text-muted/30 w-full transition-all duration-700"
+                  style={{ height: `${(leaveStats.casual.pending / leaveStats.casual.total) * 100}%` }}
+                />
+                <div
+                  className="bg-primary-500 w-full transition-all duration-1000 flex items-start justify-center pt-2"
+                  style={{ height: `${(leaveStats.casual.remaining / leaveStats.casual.total) * 100}%` }}
                 >
-                  <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.1)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.1)_50%,rgba(255,255,255,0.1)_75%,transparent_75%,transparent)] bg-size-[1rem_1rem]"></div>
-                  <span className="relative z-10 font-bold text-white text-xl drop-shadow-md">
-                    {balances.casual.remaining}
-                  </span>
+                  <span className="font-bold text-white">{leaveStats.casual.remaining}</span>
                 </div>
               </div>
               <div className="text-center">
-                <div className="flex items-center justify-center gap-2 text-text-primary font-semibold">
-                  <Coffee className="w-4 h-4 text-primary-400" />
-                  Casual Leave
-                </div>
-                <p className="text-sm text-text-muted mt-1">
-                  {balances.casual.total} Total Days
-                </p>
+                <span className="text-sm font-semibold flex items-center gap-1 justify-center">
+                  <Coffee className="w-4 h-4 text-primary-400" /> Casual
+                </span>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Right Panel - Leave Application Form */}
-      <div className="flex w-full lg:w-1/2 items-center justify-center p-6 sm:p-12 z-10">
-        <div className="w-full space-y-8 bg-surface p-8 rounded-2xl border border-border-subtle shadow-xl">
-          {/* Mobile Header */}
-          <div className="lg:hidden flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center">
-              <Briefcase className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold">Leave Dashboard</span>
-          </div>
-
-          <div>
-            <h2 className="text-3xl font-bold">Apply for Leave</h2>
-            <p className="mt-2 text-text-secondary">
-              Submit your dates and reasons for approval.
-            </p>
-          </div>
-
+        {/* Right Panel - Form */}
+        <div className="lg:w-1/2 bg-surface p-8 rounded-2xl border border-border-subtle z-10 shadow-xl">
+          <h2 className="text-2xl font-bold mb-2">Request Time Off</h2>
           {showSuccess && (
-            <div className="bg-success-muted border border-success text-success rounded-md p-4 flex items-center gap-3 animate-in fade-in zoom-in duration-300">
-              <CheckCircle2 className="w-5 h-5" />
-              <p className="text-sm font-medium">
-                Leave application submitted successfully!
-              </p>
+            <div className="mb-4 bg-success-muted border border-success text-success p-3 rounded flex items-center gap-2 animate-in fade-in zoom-in">
+              <CheckCircle2 className="w-4 h-4" /> Request sent for approval.
             </div>
           )}
-
           {errorMessage && (
-            <div className="bg-error/10 border border-error text-error rounded-md p-4 flex items-center gap-3 animate-in fade-in zoom-in duration-300">
-              <p className="text-sm font-medium">{errorMessage}</p>
+            <div className="mb-4 bg-error/10 border border-error text-error p-3 rounded text-sm font-medium">
+              {errorMessage}
             </div>
           )}
 
-          <form onSubmit={handleApplyLeave} className="space-y-5">
-            {/* Leave Type Dropdown */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-text-secondary">
-                Leave Type
-              </label>
-              <div className="relative">
-                <select
-                  value={leaveType}
-                  onChange={(e) => setLeaveType(e.target.value)}
-                  className="w-full appearance-none rounded-lg border border-border-strong bg-background-input pl-4 pr-10 py-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all cursor-pointer"
-                  required
-                >
-                  <option value="casual leave">Casual Leave</option>
-                  <option value="sick leave">Sick Leave</option>
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted">
-                  <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
-                    <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-                  </svg>
-                </div>
-              </div>
+          <form onSubmit={handleApplyLeave} className="space-y-4">
+            <div>
+              <label className="text-xs font-bold uppercase text-text-muted">Leave Type</label>
+              <select
+                value={leaveType}
+                onChange={(e) => setLeaveType(e.target.value)}
+                className="w-full mt-1 bg-background-input border border-border-strong p-3 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 transition-all outline-none"
+              >
+                <option value="casual leave">Casual Leave</option>
+                <option value="sick leave">Sick Leave</option>
+              </select>
             </div>
 
-            {/* Date Selection (Native Calendars) */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-text-secondary">
-                  Start Date
-                </label>
-                <div className="relative">
-                  <CalendarDays className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full rounded-lg border border-border-strong bg-background-input pl-10 pr-4 py-3 text-sm text-text-primary placeholder:text-text-disabled focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all [&::-webkit-calendar-picker-indicator]:invert-[0.8] [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-                    required
-                  />
-                </div>
+              <div>
+                <label className="text-xs font-bold uppercase text-text-muted">Start</label>
+                <input
+                  type="date"
+                  min={today}
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full mt-1 bg-background-input border border-border-strong p-3 rounded-lg text-sm outline-none"
+                  required
+                />
               </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-text-secondary">
-                  End Date
-                </label>
-                <div className="relative">
-                  <CalendarDays className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    min={startDate}
-                    className="w-full rounded-lg border border-border-strong bg-background-input pl-10 pr-4 py-3 text-sm text-text-primary placeholder:text-text-disabled focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all [&::-webkit-calendar-picker-indicator]:invert-[0.8] [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Reason Textarea */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-text-secondary">
-                Reason for Leave
-              </label>
-              <div className="relative">
-                <FileText className="absolute left-3.5 top-3.5 w-4 h-4 text-text-muted pointer-events-none" />
-                <textarea
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  placeholder="Please provide a brief reason..."
-                  rows={4}
-                  className="w-full rounded-lg border border-border-strong bg-background-input pl-10 pr-4 py-3 text-sm text-text-primary placeholder:text-text-disabled focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all resize-none"
+              <div>
+                <label className="text-xs font-bold uppercase text-text-muted">End</label>
+                <input
+                  type="date"
+                  min={startDate || today}
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full mt-1 bg-background-input border border-border-strong p-3 rounded-lg text-sm outline-none"
                   required
                 />
               </div>
             </div>
 
-            {/* Submit Button */}
+            <div>
+              <label className="text-xs font-bold uppercase text-text-muted">Reason</label>
+              <textarea
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                rows={3}
+                className="w-full mt-1 bg-background-input border border-border-strong p-3 rounded-lg text-sm resize-none outline-none"
+                placeholder="Why do you need leave?"
+                required
+              />
+            </div>
+
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 cursor-pointer rounded-lg py-3 text-sm font-semibold text-white shadow-lg shadow-secondary/20 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 transition-all bg-secondary hover:bg-secondary-hover hover:scale-[1.02]"
+              className="w-full bg-secondary hover:bg-secondary-hover py-3 rounded-lg font-bold text-white transition-all disabled:opacity-50 flex justify-center items-center gap-2 cursor-pointer shadow-lg shadow-secondary/20"
             >
-              {isLoading ? (
-                "Submitting..."
-              ) : (
-                <>
-                  Submit Application
-                  <Send className="w-4 h-4" />
-                </>
-              )}
+              {isLoading ? "Processing..." : <>Submit Request <Send className="w-4 h-4" /></>}
             </button>
           </form>
+        </div>
+      </div>
+
+      {/* --- LEAVE HISTORY SECTION --- */}
+      <div className="bg-surface-elevated border border-border-strong rounded-2xl overflow-hidden shadow-xl">
+        <div className="p-6 border-b border-border-subtle bg-background-input/30 flex items-center gap-3">
+          <Calendar className="w-5 h-5 text-primary-400" />
+          <h2 className="text-xl font-bold">Leave History</h2>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="text-xs uppercase tracking-widest text-text-muted font-black border-b border-border-subtle bg-background-input/10">
+                <th className="px-6 py-4">Type</th>
+                <th className="px-6 py-4">Dates</th>
+                <th className="px-6 py-4">Duration</th>
+                <th className="px-6 py-4">Reason</th>
+                <th className="px-6 py-4">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border-subtle">
+              {userData?.leaves?.history && userData.leaves.history.length > 0 ? (
+                [...userData.leaves.history].reverse().map((item: any, idx: number) => (
+                  <tr key={item._id || idx} className="hover:bg-background-input/20 transition-colors group">
+                    <td className="px-6 py-4">
+                      <span className="text-xs font-bold uppercase px-2 py-1 rounded bg-background-input border border-border-strong">
+                        {item.leaveType}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm font-medium">
+                      {new Date(item.startDate).toLocaleDateString()} - {new Date(item.endDate).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 text-sm font-bold text-text-secondary">
+                      {item.duration} {item.duration === 1 ? 'Day' : 'Days'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className="text-sm text-text-muted max-w-xs truncate" title={item.reason}>
+                        {item.reason}
+                      </p>
+                      {item.adminNote && (
+                        <p className="text-[10px] text-error mt-1 italic">Note: {item.adminNote}</p>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`flex items-center gap-1.5 w-max px-2.5 py-1 rounded-md border text-[10px] font-black uppercase tracking-wider ${getStatusStyle(item.status)}`}>
+                        {item.status === "Approved" && <CheckCircle2 className="w-3 h-3" />}
+                        {item.status === "Declined" && <XCircle className="w-3 h-3" />}
+                        {item.status === "Pending" && <Clock className="w-3 h-3" />}
+                        {item.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-text-muted text-sm italic">
+                    No leave requests found in your history.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
