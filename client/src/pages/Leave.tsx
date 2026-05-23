@@ -80,7 +80,9 @@ const Leave = () => {
         setEndDate("");
         setReason("");
 
-        const userRes = await axios.get(`/api/management/getuserdetails?id=${userData._id}`);
+        const userRes = await axios.get(
+          `/api/info/getuserdetails?id=${userData._id}`,
+        );
         if (userRes.data.success) setUserData(userRes.data.data);
 
         setTimeout(() => setShowSuccess(false), 3000);
@@ -94,9 +96,12 @@ const Leave = () => {
 
   const getStatusStyle = (status: string) => {
     switch (status) {
-      case "Approved": return "bg-success/10 text-success border-success/20";
-      case "Declined": return "bg-error/10 text-error border-error/20";
-      default: return "bg-warning/10 text-warning border-warning/20";
+      case "Approved":
+        return "bg-success/10 text-success border-success/20";
+      case "Declined":
+        return "bg-error/10 text-error border-error/20";
+      default:
+        return "bg-warning/10 text-warning border-warning/20";
     }
   };
 
@@ -113,7 +118,8 @@ const Leave = () => {
               <h1 className="text-3xl font-extrabold">Leave Balance</h1>
             </div>
             <p className="text-text-secondary text-sm">
-              Gray area represents <b>Pending</b> days. Colored area is your <b>Remaining</b> usable balance.
+              Gray area represents <b>Pending</b> days. Colored area is your{" "}
+              <b>Remaining</b> usable balance.
             </p>
           </div>
 
@@ -123,13 +129,19 @@ const Leave = () => {
               <div className="h-64 w-full bg-background-input border-2 border-border-strong rounded-2xl relative overflow-hidden flex flex-col justify-end shadow-lg">
                 <div
                   className="bg-text-muted/30 w-full transition-all duration-700"
-                  style={{ height: `${(leaveStats.sick.pending / leaveStats.sick.total) * 100}%` }}
+                  style={{
+                    height: `${(leaveStats.sick.pending / leaveStats.sick.total) * 100}%`,
+                  }}
                 />
                 <div
                   className="bg-secondary w-full transition-all duration-1000 flex items-start justify-center pt-2"
-                  style={{ height: `${(leaveStats.sick.remaining / leaveStats.sick.total) * 100}%` }}
+                  style={{
+                    height: `${(leaveStats.sick.remaining / leaveStats.sick.total) * 100}%`,
+                  }}
                 >
-                  <span className="font-bold text-white">{leaveStats.sick.remaining}</span>
+                  <span className="font-bold text-white">
+                    {leaveStats.sick.remaining}
+                  </span>
                 </div>
               </div>
               <div className="text-center">
@@ -144,13 +156,19 @@ const Leave = () => {
               <div className="h-64 w-full bg-background-input border-2 border-border-strong rounded-2xl relative overflow-hidden flex flex-col justify-end shadow-lg">
                 <div
                   className="bg-text-muted/30 w-full transition-all duration-700"
-                  style={{ height: `${(leaveStats.casual.pending / leaveStats.casual.total) * 100}%` }}
+                  style={{
+                    height: `${(leaveStats.casual.pending / leaveStats.casual.total) * 100}%`,
+                  }}
                 />
                 <div
                   className="bg-primary-500 w-full transition-all duration-1000 flex items-start justify-center pt-2"
-                  style={{ height: `${(leaveStats.casual.remaining / leaveStats.casual.total) * 100}%` }}
+                  style={{
+                    height: `${(leaveStats.casual.remaining / leaveStats.casual.total) * 100}%`,
+                  }}
                 >
-                  <span className="font-bold text-white">{leaveStats.casual.remaining}</span>
+                  <span className="font-bold text-white">
+                    {leaveStats.casual.remaining}
+                  </span>
                 </div>
               </div>
               <div className="text-center">
@@ -178,7 +196,9 @@ const Leave = () => {
 
           <form onSubmit={handleApplyLeave} className="space-y-4">
             <div>
-              <label className="text-xs font-bold uppercase text-text-muted">Leave Type</label>
+              <label className="text-xs font-bold uppercase text-text-muted">
+                Leave Type
+              </label>
               <select
                 value={leaveType}
                 onChange={(e) => setLeaveType(e.target.value)}
@@ -191,7 +211,9 @@ const Leave = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-bold uppercase text-text-muted">Start</label>
+                <label className="text-xs font-bold uppercase text-text-muted">
+                  Start
+                </label>
                 <input
                   type="date"
                   min={today}
@@ -202,7 +224,9 @@ const Leave = () => {
                 />
               </div>
               <div>
-                <label className="text-xs font-bold uppercase text-text-muted">End</label>
+                <label className="text-xs font-bold uppercase text-text-muted">
+                  End
+                </label>
                 <input
                   type="date"
                   min={startDate || today}
@@ -215,7 +239,9 @@ const Leave = () => {
             </div>
 
             <div>
-              <label className="text-xs font-bold uppercase text-text-muted">Reason</label>
+              <label className="text-xs font-bold uppercase text-text-muted">
+                Reason
+              </label>
               <textarea
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
@@ -231,7 +257,13 @@ const Leave = () => {
               disabled={isLoading}
               className="w-full bg-secondary hover:bg-secondary-hover py-3 rounded-lg font-bold text-white transition-all disabled:opacity-50 flex justify-center items-center gap-2 cursor-pointer shadow-lg shadow-secondary/20"
             >
-              {isLoading ? "Processing..." : <>Submit Request <Send className="w-4 h-4" /></>}
+              {isLoading ? (
+                "Processing..."
+              ) : (
+                <>
+                  Submit Request <Send className="w-4 h-4" />
+                </>
+              )}
             </button>
           </form>
         </div>
@@ -256,41 +288,64 @@ const Leave = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-border-subtle">
-              {userData?.leaves?.history && userData.leaves.history.length > 0 ? (
-                [...userData.leaves.history].reverse().map((item: any, idx: number) => (
-                  <tr key={item._id || idx} className="hover:bg-background-input/20 transition-colors group">
-                    <td className="px-6 py-4">
-                      <span className="text-xs font-bold uppercase px-2 py-1 rounded bg-background-input border border-border-strong">
-                        {item.leaveType}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm font-medium">
-                      {new Date(item.startDate).toLocaleDateString()} - {new Date(item.endDate).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-bold text-text-secondary">
-                      {item.duration} {item.duration === 1 ? 'Day' : 'Days'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-text-muted max-w-xs truncate" title={item.reason}>
-                        {item.reason}
-                      </p>
-                      {item.adminNote && (
-                        <p className="text-[10px] text-error mt-1 italic">Note: {item.adminNote}</p>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`flex items-center gap-1.5 w-max px-2.5 py-1 rounded-md border text-[10px] font-black uppercase tracking-wider ${getStatusStyle(item.status)}`}>
-                        {item.status === "Approved" && <CheckCircle2 className="w-3 h-3" />}
-                        {item.status === "Declined" && <XCircle className="w-3 h-3" />}
-                        {item.status === "Pending" && <Clock className="w-3 h-3" />}
-                        {item.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))
+              {userData?.leaves?.history &&
+              userData.leaves.history.length > 0 ? (
+                [...userData.leaves.history]
+                  .reverse()
+                  .map((item: any, idx: number) => (
+                    <tr
+                      key={item._id || idx}
+                      className="hover:bg-background-input/20 transition-colors group"
+                    >
+                      <td className="px-6 py-4">
+                        <span className="text-xs font-bold uppercase px-2 py-1 rounded bg-background-input border border-border-strong">
+                          {item.leaveType}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium">
+                        {new Date(item.startDate).toLocaleDateString()} -{" "}
+                        {new Date(item.endDate).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-bold text-text-secondary">
+                        {item.duration} {item.duration === 1 ? "Day" : "Days"}
+                      </td>
+                      <td className="px-6 py-4">
+                        <p
+                          className="text-sm text-text-muted max-w-xs truncate"
+                          title={item.reason}
+                        >
+                          {item.reason}
+                        </p>
+                        {item.adminNote && (
+                          <p className="text-[10px] text-error mt-1 italic">
+                            Note: {item.adminNote}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`flex items-center gap-1.5 w-max px-2.5 py-1 rounded-md border text-[10px] font-black uppercase tracking-wider ${getStatusStyle(item.status)}`}
+                        >
+                          {item.status === "Approved" && (
+                            <CheckCircle2 className="w-3 h-3" />
+                          )}
+                          {item.status === "Declined" && (
+                            <XCircle className="w-3 h-3" />
+                          )}
+                          {item.status === "Pending" && (
+                            <Clock className="w-3 h-3" />
+                          )}
+                          {item.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-text-muted text-sm italic">
+                  <td
+                    colSpan={5}
+                    className="px-6 py-12 text-center text-text-muted text-sm italic"
+                  >
                     No leave requests found in your history.
                   </td>
                 </tr>
